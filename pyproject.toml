@@ -12,6 +12,7 @@ fooproj = "fooproj.cli:main"
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",
+    "pre-commit>=4.2.0",
     "pytest>=8.3.5",
     "ruff>=0.11.10",
 ]
@@ -22,6 +23,7 @@ lint-extra = [
     "isort>=5.13.2",
     "pylint>=3.3.1",
     "refurb>=2.0.0",
+    "ty>=0.0.1a4",
     "vulture>=2.11",
 ]
 
