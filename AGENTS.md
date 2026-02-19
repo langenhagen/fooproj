@@ -13,6 +13,7 @@ Practical guidance for humans and coding agents working in this repository.
 - Language: Python.
 - Runtime/version management: `pyenv`.
 - Package/dependency/task workflow: `uv`.
+- Game runtime: `ursina`.
 - Test framework: `pytest`.
 - Lint/format: `ruff`.
 - Type checking: `mypy`.
@@ -29,11 +30,14 @@ Practical guidance for humans and coding agents working in this repository.
 Prefer repo-local, reproducible commands:
 
 - Sync dependencies: `uv sync`.
-- Run app entrypoint: `uv run fooproj`.
+- Run app entrypoint (game): `uv run fooproj`.
 - Run tests: `uv run pytest`.
 - Run linter: `uv run ruff check .`.
 - Format code: `uv run ruff format .`.
 - Run type checks: `uv run mypy fooproj`.
+- Install hooks: `uv run pre-commit install`.
+- Run hooks manually: `uv run pre-commit run --all-files`.
+- Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
 
 Do not run full test suites automatically unless requested; use focused checks for touched files/areas first.
 
@@ -79,6 +83,7 @@ Commit message DO:
 - Wrap body text to about 72 columns.
 - Use simple line wraps in the body and keep one paragraph by default.
 - Add extra blank lines only when you intentionally start a new paragraph.
+
 Commit message DON'T:
 
 - Do not use Conventional Commit prefixes.
