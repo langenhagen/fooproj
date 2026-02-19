@@ -40,43 +40,43 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = [
-    "ANN",
-    "B",
-    "C4",
-    "D",
-    "EXE",
-    "F",
-    "FA",
-    "FURB",
-    "G",
-    "I",
-    "ICN",
-    "ISC",
-    "LOG",
-    "NPY",
-    "PIE",
-    "Q",
-    "RET",
-    "RSE",
-    "SIM",
-    "TC",
-    "UP",
-    "W",
+    "ANN",  # Require and validate type annotations.
+    "B",    # Catch likely bugs and risky patterns (flake8-bugbear).
+    "C4",   # Prefer concise and efficient comprehensions.
+    "D",    # Enforce docstring presence and style.
+    "EXE",  # Check shebangs and executable script conventions.
+    "F",    # Catch undefined names and unused imports (Pyflakes).
+    "FA",   # Future-annotations compatibility checks.
+    "FURB", # Apply Refurb modernization suggestions.
+    "G",    # Enforce safe logging string formatting.
+    "I",    # Enforce import sorting and grouping.
+    "ICN",  # Enforce import aliasing conventions.
+    "ISC",  # Detect implicit string concatenation issues.
+    "LOG",  # Validate logging usage patterns.
+    "NPY",  # Check NumPy-specific modern idioms.
+    "PIE",  # Enforce general Python idioms.
+    "Q",    # Enforce quote style consistency.
+    "RET",  # Catch ambiguous or unnecessary returns.
+    "RSE",  # Enforce clean and correct raise statements.
+    "SIM",  # Suggest simpler equivalent code.
+    "TC",   # Keep type-only imports behind TYPE_CHECKING.
+    "UP",   # Apply pyupgrade-style syntax modernization.
+    "W",    # Catch whitespace issues.
 ]
 ignore = [
-    "B904",
-    "B905",
-    "D202",
-    "D203",
-    "D205",
-    "D213",
-    "D405",
-    "D407",
-    "D412",
-    "D416",
-    "FA102",
-    "UP015",
-    "UP035",
+    "B904",  # Allow raising without explicit exception chaining.
+    "B905",  # Do not require zip(..., strict=...).
+    "D202",  # Allow blank line after function docstring.
+    "D203",  # Do not require blank line before class docstring.
+    "D205",  # Do not require summary/description separation line.
+    "D213",  # Allow summary on first line of multi-line docstring.
+    "D405",  # Do not require strict section capitalization.
+    "D407",  # Do not require dashed underline after section name.
+    "D412",  # Allow blank lines between section headers and content.
+    "D416",  # Do not require section headers ending with colon.
+    "FA102", # Do not require from __future__ import annotations.
+    "UP015", # Allow explicit open() mode arguments.
+    "UP035", # Allow selected deprecated import paths.
 ]
 
 [tool.black]
