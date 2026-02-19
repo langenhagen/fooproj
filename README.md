@@ -11,8 +11,8 @@ Minimal Python project boilerplate using `pyenv` + `uv`.
 
 ```bash
 # install and activate the pinned Python version
-pyenv install -s 3.13.3
-pyenv local 3.13.3
+pyenv install -s 3.14.3
+pyenv local 3.14.3
 
 # create/update virtual environment and dependencies
 uv sync
@@ -23,7 +23,7 @@ uv run fooproj
 # run quality checks
 uv run ruff check .
 uv run ruff format .
-uv run mypy src
+uv run mypy fooproj
 uv run pytest
 
 # install git hooks
@@ -34,15 +34,15 @@ uv run pre-commit run --all-files
 
 # optional: install and run extended lint stack
 uv sync --group lint-extra
-l3 src tests
+l3 fooproj tests
 
 # optional: quick autofix pass
-rf src tests
+rf fooproj tests
 ```
 
 ## Project layout
 
-- `src/fooproj/`: application package
+- `fooproj/`: application package
 - `tests/`: test suite
 - `pyproject.toml`: project metadata and tool config
 

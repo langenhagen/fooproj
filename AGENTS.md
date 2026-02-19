@@ -19,7 +19,7 @@ Practical guidance for humans and coding agents working in this repository.
 
 ## Repo Layout
 
-- `src/`: application package(s).
+- `fooproj/`: application package.
 - `tests/`: unit and integration tests.
 - `pyproject.toml`: project metadata and tool configuration.
 - `.python-version`: pinned Python version for `pyenv`.
@@ -33,7 +33,7 @@ Prefer repo-local, reproducible commands:
 - Run tests: `uv run pytest`.
 - Run linter: `uv run ruff check .`.
 - Format code: `uv run ruff format .`.
-- Run type checks: `uv run mypy src`.
+- Run type checks: `uv run mypy fooproj`.
 
 Personal helper scripts (if available in `PATH`):
 

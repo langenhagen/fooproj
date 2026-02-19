@@ -32,19 +32,19 @@ repos:
     hooks:
       - id: ty-typecheck
         name: type check with ty
-        entry: uv run --group lint-extra ty check src tests
+        entry: uv run --group lint-extra ty check fooproj tests
         language: system
         pass_filenames: false
 
       - id: mypy-typecheck
         name: type check with mypy
-        entry: uv run mypy src
+        entry: uv run mypy fooproj
         language: system
         pass_filenames: false
 
       - id: vulture
         name: check dead code with vulture
-        entry: uv run --group lint-extra vulture src tests
+        entry: uv run --group lint-extra vulture fooproj tests
         args: [--min-confidence, "70"]
         language: system
         pass_filenames: false
