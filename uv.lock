@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.14.*"
 
 [[package]]
@@ -131,7 +131,7 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
-lint-extra = [
+lint = [
     { name = "bandit" },
     { name = "black" },
     { name = "flake8" },
@@ -151,7 +151,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "ruff", specifier = ">=0.11.10" },
 ]
-lint-extra = [
+lint = [
     { name = "bandit", specifier = ">=1.7.9" },
     { name = "black", specifier = ">=24.10.0" },
     { name = "flake8", specifier = ">=7.1.1" },

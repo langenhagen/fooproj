@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: ty-typecheck
         name: type check with ty
-        entry: uv run --group lint-extra ty check fooproj tests
+        entry: uv run --group lint ty check fooproj tests
         language: system
         pass_filenames: false
 
@@ -44,7 +44,7 @@ repos:
 
       - id: vulture
         name: check dead code with vulture
-        entry: uv run --group lint-extra vulture fooproj tests
+        entry: uv run --group lint vulture fooproj tests
         args: [--min-confidence, "70"]
         language: system
         pass_filenames: false

@@ -33,7 +33,7 @@ uv run pre-commit install
 uv run pre-commit run --all-files
 
 # optional: install and run extended lint stack
-uv sync --group lint-extra
+uv sync --group lint
 l3 fooproj tests
 
 # optional: quick autofix pass
