@@ -85,11 +85,11 @@ Commit message DO:
 - Start the summary in imperative mood (for example `Add`, `Fix`, `Change`).
 - Keep the second line blank.
 - Wrap body text to about 72 columns.
-
 Commit message DON'T:
 
 - Do not use Conventional Commit prefixes.
 - Do not end the summary line with a period.
+- Do not include literal `\n` text in commit messages; use real newlines.
 
 Never include secrets in commits (`.env*`, tokens, private keys, auth dumps).
 
