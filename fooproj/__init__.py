@@ -1,5 +1,6 @@
 """fooproj package."""
 
-__all__ = ["build_greeting"]
+__all__ = ["main", "run_game"]
 
-from .cli import build_greeting
+from .cli import main
+from .game import run_game
