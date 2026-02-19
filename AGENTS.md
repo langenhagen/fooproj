@@ -35,14 +35,6 @@ Prefer repo-local, reproducible commands:
 - Format code: `uv run ruff format .`.
 - Run type checks: `uv run mypy fooproj`.
 
-Personal helper scripts (if available in `PATH`):
-
-- `rf [path]`: quick Ruff formatter and autofix pass.
-- `l3 [path]`: broad multi-tool lint pass (non-mutating).
-
-When these scripts are available, use them as a fast taste-driven check layer,
-but keep repo-level `uv run ...` commands as the baseline, reproducible checks.
-
 Do not run full test suites automatically unless requested; use focused checks for touched files/areas first.
 
 ## User Shorthand Conventions

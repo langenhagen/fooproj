@@ -10,6 +10,14 @@ Minimal Python project boilerplate using `pyenv` + `uv`.
 ## Quick start
 
 ```bash
+pyenv local 3.14.3
+uv sync
+uv run fooproj
+```
+
+## Full setup and checks
+
+```bash
 # install and activate the pinned Python version
 pyenv install -s 3.14.3
 pyenv local 3.14.3
@@ -17,7 +25,7 @@ pyenv local 3.14.3
 # create/update virtual environment and dependencies
 uv sync
 
-# run the app
+# launch the Ursina sandbox
 uv run fooproj
 
 # run quality checks
@@ -34,19 +42,17 @@ uv run pre-commit run --all-files
 
 # optional: install and run extended lint stack
 uv sync --group lint
-l3 fooproj tests
-
-# optional: quick autofix pass
-rf fooproj tests
+uv run --group lint pylint fooproj tests
+uv run --group lint vulture fooproj tests
 ```
 
 ## Project layout
 
 - `fooproj/`: application package
+- `fooproj/game/`: Ursina sandbox skeleton
 - `tests/`: test suite
 - `pyproject.toml`: project metadata and tool config
 
 ## Notes
 
-- `l3` and `rf` are personal helper scripts expected from your `PATH`.
-- Project defaults still use reproducible `uv run ...` commands.
+- Project defaults use reproducible `uv run ...` commands.
