@@ -1,6 +1,6 @@
 """Ursina runtime bootstrap functions."""
 
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, cast
 
 import ursina.color as color_module
 from ursina import EditorCamera, Entity, Sky, window
@@ -12,10 +12,6 @@ from .scene import EntityBlueprint, starter_scene_blueprints
 
 if TYPE_CHECKING:
     from ursina.color import Color
-
-
-class _AppRunner(Protocol):
-    def run(self) -> None: ...
 
 
 def resolve_color(color_name: str) -> Color:
@@ -43,7 +39,7 @@ def configure_window(settings: GameSettings) -> None:
 def run_game(settings: GameSettings | None = None) -> None:
     """Run the Ursina starter sandbox."""
     active_settings = GameSettings() if settings is None else settings
-    app = cast("_AppRunner", Ursina(development_mode=active_settings.development_mode))
+    app = cast("object", Ursina(development_mode=active_settings.development_mode))
 
     configure_window(active_settings)
 
@@ -52,4 +48,5 @@ def run_game(settings: GameSettings | None = None) -> None:
 
     Sky()
     EditorCamera(enabled=True, rotation_smoothing=0)
-    app.run()
+    run_callable = getattr(app, "run")  # noqa: B009
+    run_callable()

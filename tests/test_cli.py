@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest import TestCase
 
 from fooproj import cli
 
@@ -17,7 +18,8 @@ def test_main_calls_run_game(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_run_game() -> None:
         calls.append("run")
 
-    monkeypatch.setattr("fooproj.game.run_game", fake_run_game)
+    monkeypatch.setattr("fooproj.cli.run_game", fake_run_game)
     cli.main()
 
-    assert calls == ["run"]
+    checker = TestCase()
+    checker.assertEqual(calls, ["run"])
