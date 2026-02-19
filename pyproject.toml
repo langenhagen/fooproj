@@ -92,3 +92,7 @@ python_version = "3.14"
 strict = true
 packages = ["fooproj"]
 explicit_package_bases = false
+
+[[tool.mypy.overrides]]
+module = ["ursina", "ursina.*"]
+ignore_missing_imports = true
