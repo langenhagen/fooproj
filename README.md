@@ -26,6 +26,12 @@ uv run ruff format .
 uv run mypy src
 uv run pytest
 
+# install git hooks
+uv run pre-commit install
+
+# run all hooks once manually
+uv run pre-commit run --all-files
+
 # optional: install and run extended lint stack
 uv sync --group lint-extra
 l3 src tests
