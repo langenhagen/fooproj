@@ -57,6 +57,10 @@ Interpret these tokens as explicit workflow commands:
   - Provide an Explain Like I am 5 explanation of the current issue.
   - Keep it short, concrete, and technically correct.
 
+- `sw`
+  - Explicitly search the web before answering.
+  - Use web results as supporting context in the response.
+
 - `mc` or `commit`
   - Create a git commit.
   - Commit message must follow this structure:
