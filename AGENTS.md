@@ -85,6 +85,8 @@ Commit message DO:
 - Start the summary in imperative mood (for example `Add`, `Fix`, `Change`).
 - Keep the second line blank.
 - Wrap body text to about 72 columns.
+- Use simple line wraps in the body and keep one paragraph by default.
+- Add extra blank lines only when you intentionally start a new paragraph.
 Commit message DON'T:
 
 - Do not use Conventional Commit prefixes.
