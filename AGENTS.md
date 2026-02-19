@@ -67,7 +67,6 @@ Interpret these tokens as explicit workflow commands:
     - First line: short summary (50 chars or less), imperative mood.
     - Second line: blank.
     - Optional body wrapped to about 72 chars with normal newlines (not with `\n`).
-  - Start summary with the changed area/package, for example `fooproj:`.
   - Do not use prefixes like `fix:`, `feat:`, `chore:`.
   - Include both the commit message and a prose walkthrough of what changed and why.
 
