@@ -38,6 +38,11 @@ Prefer repo-local, reproducible commands:
 - Install hooks: `uv run pre-commit install`.
 - Run hooks manually: `uv run pre-commit run --all-files`.
 - Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
+- Optional personal lint sweep: `source .venv/bin/activate && l3`.
+- Optional personal autofix pass: `source .venv/bin/activate && rf`.
+
+Note: `l3` runs many tools and is slow. Use it sparingly, typically near
+milestones or before committing broader changes.
 
 Do not run full test suites automatically unless requested; use focused checks for touched files/areas first.
 
