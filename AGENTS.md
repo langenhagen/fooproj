@@ -104,6 +104,16 @@ Never include secrets in commits (`.env*`, tokens, private keys, auth dumps).
 - Avoid interactive commands in automation.
 - If a patch fails or context looks stale, re-read files before retrying.
 
+## Linter Pragmas
+
+- Keep linter suppressions (`noqa`, `nosec`, `type: ignore`, pylint disables)
+  as narrow as possible.
+- Always document each suppression inline with both:
+  - the rule meaning (for example `B009: getattr-with-constant`), and
+  - a short local reason for why suppression is needed.
+- Prefer config-level ignores for broad patterns (for example `tests/**/*.py`)
+  over repeated inline suppressions.
+
 ## Output Character Policy
 
 - Prefer plain ASCII in output and docs unless a file already requires Unicode.

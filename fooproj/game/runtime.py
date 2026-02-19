@@ -48,5 +48,6 @@ def run_game(settings: GameSettings | None = None) -> None:
 
     Sky()
     EditorCamera(enabled=True, rotation_smoothing=0)
-    run_callable = getattr(app, "run")  # noqa: B009
+    # Ursina's app proxy is typed as object here, so dynamic access is needed.
+    run_callable = getattr(app, "run")  # noqa: B009  # B009: getattr-with-constant
     run_callable()
