@@ -3,7 +3,7 @@ name = "fooproj"
 version = "0.1.0"
 description = "Python boilerplate powered by uv and pyenv"
 readme = "README.md"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.14,<3.15"
 dependencies = []
 
 [project.scripts]
@@ -36,7 +36,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -86,7 +86,7 @@ line-length = 88
 profile = "black"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 packages = ["fooproj"]
-explicit_package_bases = true
+explicit_package_bases = false
