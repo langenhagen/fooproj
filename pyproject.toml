@@ -1,0 +1,90 @@
+[project]
+name = "fooproj"
+version = "0.1.0"
+description = "Python boilerplate powered by uv and pyenv"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[project.scripts]
+fooproj = "fooproj.cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "ruff>=0.11.10",
+]
+lint-extra = [
+    "bandit>=1.7.9",
+    "black>=24.10.0",
+    "flake8>=7.1.1",
+    "isort>=5.13.2",
+    "pylint>=3.3.1",
+    "refurb>=2.0.0",
+    "vulture>=2.11",
+]
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "ANN",
+    "B",
+    "C4",
+    "D",
+    "EXE",
+    "F",
+    "FA",
+    "FURB",
+    "G",
+    "I",
+    "ICN",
+    "ISC",
+    "LOG",
+    "NPY",
+    "PIE",
+    "Q",
+    "RET",
+    "RSE",
+    "SIM",
+    "TC",
+    "UP",
+    "W",
+]
+ignore = [
+    "B904",
+    "B905",
+    "D202",
+    "D203",
+    "D205",
+    "D213",
+    "D405",
+    "D407",
+    "D412",
+    "D416",
+    "FA102",
+    "UP015",
+    "UP035",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+packages = ["fooproj"]
+explicit_package_bases = true
