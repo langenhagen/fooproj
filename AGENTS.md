@@ -62,7 +62,7 @@ Interpret these tokens as explicit workflow commands:
   - Explicitly search the web before answering.
   - Use web results as supporting context in the response.
 
-- `mc` or `commit`
+- `mc`, `cm`, or `commit`
   - Create a git commit.
   - Commit message must follow this structure:
     - First line: short summary (50 chars or less), imperative mood.
