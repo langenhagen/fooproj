@@ -19,7 +19,7 @@ class CameraSettings:
     distance: float = 10.0
     height: float = 1.1
     min_distance: float = 4.0
-    max_distance: float = 18.0
+    max_distance: float | None = None
     zoom_step: float = 1.0
 
 

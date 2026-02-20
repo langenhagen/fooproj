@@ -183,7 +183,7 @@ def compute_look_angles(
     """Update yaw and pitch from mouse input and clamp pitch."""
     next_yaw = yaw_angle + (mouse_velocity.x * mouse_look_speed)
     next_pitch = pitch_angle + (mouse_velocity.y * mouse_look_speed)
-    next_pitch = max(-70.0, min(70.0, next_pitch))
+    next_pitch = max(-90.0, min(90.0, next_pitch))
     return next_yaw, next_pitch
 
 
@@ -191,11 +191,14 @@ def compute_zoom_distance(
     current_distance: float,
     scroll_direction: int,
     min_distance: float,
-    max_distance: float,
+    max_distance: float | None,
     zoom_step: float,
 ) -> float:
     """Adjust and clamp camera zoom distance from scroll input."""
     next_distance = current_distance - (scroll_direction * zoom_step)
+    if max_distance is None:
+        return max(min_distance, next_distance)
+
     return max(min_distance, min(max_distance, next_distance))
 
 

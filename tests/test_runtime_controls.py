@@ -43,11 +43,11 @@ def test_compute_look_angles_updates_yaw_and_pitch() -> None:
 
 def test_compute_look_angles_clamps_pitch() -> None:
     """Clamp pitch to the configured up/down look limits."""
-    _, high_pitch = compute_look_angles(0.0, 69.0, Vec3(0.0, 1.0, 0.0), 10.0)
-    _, low_pitch = compute_look_angles(0.0, -69.0, Vec3(0.0, -1.0, 0.0), 10.0)
+    _, high_pitch = compute_look_angles(0.0, 89.0, Vec3(0.0, 1.0, 0.0), 10.0)
+    _, low_pitch = compute_look_angles(0.0, -89.0, Vec3(0.0, -1.0, 0.0), 10.0)
     checker = TestCase()
-    checker.assertEqual(high_pitch, 70.0)
-    checker.assertEqual(low_pitch, -70.0)
+    checker.assertEqual(high_pitch, 90.0)
+    checker.assertEqual(low_pitch, -90.0)
 
 
 def test_compute_zoom_distance_scroll_up_zooms_in() -> None:
@@ -71,3 +71,10 @@ def test_compute_zoom_distance_clamps_to_min_and_max() -> None:
     checker = TestCase()
     checker.assertEqual(min_clamped, 4.0)
     checker.assertEqual(max_clamped, 18.0)
+
+
+def test_compute_zoom_distance_without_max_limit() -> None:
+    """Allow unbounded zoom-out when max distance is disabled."""
+    distance = compute_zoom_distance(18.0, -1, 4.0, None, 6.0)
+    checker = TestCase()
+    checker.assertEqual(distance, 24.0)
