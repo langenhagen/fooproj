@@ -1,6 +1,7 @@
 """Ursina runtime bootstrap functions."""
 
-from typing import TYPE_CHECKING, Mapping, cast
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
 import ursina
 import ursina.color as color_module
@@ -19,7 +20,7 @@ from ursina import (
 )
 from ursina.main import Ursina
 
-from .config import GameSettings
+from .config import CameraSettings, GameSettings, MovementSettings
 from .scene import EntityBlueprint, starter_scene_blueprints
 
 if TYPE_CHECKING:
@@ -27,6 +28,23 @@ if TYPE_CHECKING:
 
 
 LIT_SHADER = cast("object", ursina_shaders.lit_with_shadows_shader)
+
+
+@dataclass(slots=True)
+class OrbitControlState:
+    """Mutable orbit camera state used across input frames."""
+
+    yaw_angle: float
+    pitch_angle: float
+    camera_distance: float
+
+
+@dataclass(frozen=True, slots=True)
+class OrbitRig:
+    """Holds yaw and pitch pivot entities for camera orbit."""
+
+    yaw_pivot: Entity
+    pitch_pivot: Entity
 
 
 def resolve_color(color_name: str) -> Color:
@@ -103,14 +121,14 @@ def configure_camera() -> None:
     camera.rotation = Vec3(0.0, 0.0, 0.0)
 
 
-def create_camera_orbit_rig(settings: GameSettings) -> tuple[Entity, Entity]:
+def create_camera_orbit_rig(settings: GameSettings) -> OrbitRig:
     """Create yaw/pitch pivots used for stable camera orbit."""
     yaw_pivot = Entity(parent=scene)
     pitch_pivot = Entity(parent=yaw_pivot)
     camera.parent = pitch_pivot
-    camera.position = Vec3(0.0, 0.0, -settings.camera_distance)
+    camera.position = Vec3(0.0, 0.0, -settings.camera.distance)
     camera.rotation = Vec3(0.0, 0.0, 0.0)
-    return yaw_pivot, pitch_pivot
+    return OrbitRig(yaw_pivot=yaw_pivot, pitch_pivot=pitch_pivot)
 
 
 def configure_mouse_capture() -> None:
@@ -148,7 +166,7 @@ def configure_lighting() -> None:
     ambient_light.color = color_module.rgba(0.22, 0.24, 0.28, 1.0)
 
 
-def compute_keyboard_axes(held: Mapping[str, float]) -> tuple[float, float, float]:
+def compute_keyboard_axes(held: dict[str, float]) -> tuple[float, float, float]:
     """Compute movement axes from the current held-key mapping."""
     forward_amount = held.get("up arrow", 0.0) - held.get("down arrow", 0.0)
     strafe_amount = held.get("right arrow", 0.0) - held.get("left arrow", 0.0)
@@ -183,47 +201,42 @@ def compute_zoom_distance(
 
 def install_movement_controller(
     player: Entity,
-    yaw_pivot: Entity,
-    pitch_pivot: Entity,
+    orbit_rig: OrbitRig,
     settings: GameSettings,
 ) -> Entity:
     """Attach per-frame movement handling to a controller entity."""
     controller = Entity()
-    yaw_angle = player.rotation_y
-    pitch_angle = 18.0
-    camera_distance = settings.camera_distance
+    control_state = OrbitControlState(
+        yaw_angle=player.rotation_y,
+        pitch_angle=18.0,
+        camera_distance=settings.camera.distance,
+    )
 
     def controller_update() -> None:
-        nonlocal yaw_angle
-        nonlocal pitch_angle
-        nonlocal camera_distance
-        yaw_angle, pitch_angle = apply_player_input(
+        apply_player_input(
             player,
-            yaw_pivot,
-            pitch_pivot,
-            settings,
-            camera_distance,
-            yaw_angle,
-            pitch_angle,
+            orbit_rig,
+            settings.movement,
+            settings.camera,
+            control_state,
         )
 
     def controller_input(key: str) -> None:
-        nonlocal camera_distance
         if key == "scroll up":
-            camera_distance = compute_zoom_distance(
-                camera_distance,
+            control_state.camera_distance = compute_zoom_distance(
+                control_state.camera_distance,
                 scroll_direction=1,
-                min_distance=settings.min_camera_distance,
-                max_distance=settings.max_camera_distance,
-                zoom_step=settings.zoom_step,
+                min_distance=settings.camera.min_distance,
+                max_distance=settings.camera.max_distance,
+                zoom_step=settings.camera.zoom_step,
             )
         elif key == "scroll down":
-            camera_distance = compute_zoom_distance(
-                camera_distance,
+            control_state.camera_distance = compute_zoom_distance(
+                control_state.camera_distance,
                 scroll_direction=-1,
-                min_distance=settings.min_camera_distance,
-                max_distance=settings.max_camera_distance,
-                zoom_step=settings.zoom_step,
+                min_distance=settings.camera.min_distance,
+                max_distance=settings.camera.max_distance,
+                zoom_step=settings.camera.zoom_step,
             )
 
     controller.update = controller_update
@@ -233,40 +246,43 @@ def install_movement_controller(
 
 def apply_player_input(
     player: Entity,
-    yaw_pivot: Entity,
-    pitch_pivot: Entity,
-    settings: GameSettings,
-    camera_distance: float,
-    yaw_angle: float,
-    pitch_angle: float,
-) -> tuple[float, float]:
+    orbit_rig: OrbitRig,
+    movement_settings: MovementSettings,
+    camera_settings: CameraSettings,
+    control_state: OrbitControlState,
+) -> None:
     """Apply keyboard movement and rotation to the player."""
     held = cast("dict[str, float]", getattr(ursina, "held_keys", {}))
     forward_amount, strafe_amount, turn_amount = compute_keyboard_axes(held)
     mouse_velocity = cast("Vec3", getattr(mouse, "velocity", Vec3(0.0, 0.0, 0.0)))
 
     # Ursina exposes frame delta via dynamic module attributes.
-    dt = cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009  # B009: getattr-with-constant
-    player.position += player.forward * (forward_amount * settings.move_speed * dt)
-    player.position += player.right * (strafe_amount * settings.move_speed * dt)
-    player.rotation_y += turn_amount * settings.turn_speed * dt
+    # B009: getattr-with-constant; ursina.time.dt is dynamic at runtime.
+    dt = cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009
+    player.position += player.forward * (
+        forward_amount * movement_settings.move_speed * dt
+    )
+    player.position += player.right * (
+        strafe_amount * movement_settings.move_speed * dt
+    )
+    player.rotation_y += turn_amount * movement_settings.turn_speed * dt
 
-    yaw_angle, pitch_angle = compute_look_angles(
-        yaw_angle,
-        pitch_angle,
+    control_state.yaw_angle, control_state.pitch_angle = compute_look_angles(
+        control_state.yaw_angle,
+        control_state.pitch_angle,
         mouse_velocity,
-        settings.mouse_look_speed,
+        camera_settings.mouse_look_speed,
     )
 
-    yaw_pivot.world_position = player.world_position + Vec3(
-        0.0, settings.camera_height, 0.0
+    orbit_rig.yaw_pivot.world_position = player.world_position + Vec3(
+        0.0,
+        camera_settings.height,
+        0.0,
     )
-    yaw_pivot.rotation = Vec3(0.0, yaw_angle, 0.0)
-    pitch_pivot.rotation = Vec3(pitch_angle, 0.0, 0.0)
-    camera.z = -camera_distance
+    orbit_rig.yaw_pivot.rotation = Vec3(0.0, control_state.yaw_angle, 0.0)
+    orbit_rig.pitch_pivot.rotation = Vec3(control_state.pitch_angle, 0.0, 0.0)
+    camera.z = -control_state.camera_distance
     camera.rotation_z = 0.0
-
-    return yaw_angle, pitch_angle
 
 
 def run_game(settings: GameSettings | None = None) -> None:
@@ -281,11 +297,11 @@ def run_game(settings: GameSettings | None = None) -> None:
 
     player = spawn_player()
     configure_camera()
-    yaw_pivot, pitch_pivot = create_camera_orbit_rig(active_settings)
+    orbit_rig = create_camera_orbit_rig(active_settings)
     configure_mouse_capture()
     create_controls_hint()
     configure_lighting()
-    install_movement_controller(player, yaw_pivot, pitch_pivot, active_settings)
+    install_movement_controller(player, orbit_rig, active_settings)
 
     Sky()
     # Ursina's app proxy is typed as object here, so dynamic access is needed.
