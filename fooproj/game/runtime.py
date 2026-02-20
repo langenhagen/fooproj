@@ -37,13 +37,44 @@ def configure_window(settings: GameSettings) -> None:
 
 
 def spawn_player() -> Entity:
-    """Create the controllable player entity."""
-    return Entity(
+    """Create a simple low-poly car as the controllable player entity."""
+    car = Entity(position=Vec3(0.0, 0.35, 0.0))
+
+    Entity(
+        parent=car,
         model="cube",
-        color=color_module.gold,
-        scale=Vec3(0.9, 0.9, 0.9),
-        position=Vec3(0.0, 0.45, 0.0),
+        color=color_module.orange,
+        scale=Vec3(1.8, 0.4, 3.2),
+        position=Vec3(0.0, 0.0, 0.0),
     )
+    Entity(
+        parent=car,
+        model="cube",
+        color=color_module.azure,
+        scale=Vec3(1.3, 0.45, 1.4),
+        position=Vec3(0.0, 0.42, -0.2),
+    )
+    Entity(
+        parent=car,
+        model="cube",
+        color=color_module.red,
+        scale=Vec3(0.35, 0.2, 0.25),
+        position=Vec3(0.0, 0.12, 1.55),
+    )
+
+    wheel_color = color_module.black
+    wheel_scale = Vec3(0.42, 0.42, 0.42)
+    for x_pos in (-0.85, 0.85):
+        for z_pos in (-1.1, 1.1):
+            Entity(
+                parent=car,
+                model="sphere",
+                color=wheel_color,
+                scale=wheel_scale,
+                position=Vec3(x_pos, -0.18, z_pos),
+            )
+
+    return car
 
 
 def configure_camera() -> None:
