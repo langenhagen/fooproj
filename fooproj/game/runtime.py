@@ -1,10 +1,22 @@
 """Ursina runtime bootstrap functions."""
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Mapping, cast
 
 import ursina
 import ursina.color as color_module
-from ursina import Entity, Sky, Text, Vec3, camera, mouse, scene, window
+import ursina.shaders as ursina_shaders
+from ursina import (
+    AmbientLight,
+    DirectionalLight,
+    Entity,
+    Sky,
+    Text,
+    Vec3,
+    camera,
+    mouse,
+    scene,
+    window,
+)
 from ursina.main import Ursina
 
 from .config import GameSettings
@@ -14,6 +26,9 @@ if TYPE_CHECKING:
     from ursina.color import Color
 
 
+LIT_SHADER = cast("object", ursina_shaders.lit_with_shadows_shader)
+
+
 def resolve_color(color_name: str) -> Color:
     """Resolve a color name from Ursina's built-in color palette."""
     return cast("Color", getattr(color_module, color_name, color_module.white))
@@ -21,12 +36,13 @@ def resolve_color(color_name: str) -> Color:
 
 def spawn_entity(blueprint: EntityBlueprint) -> None:
     """Spawn one entity from a scene blueprint."""
-    Entity(
+    entity = Entity(
         model=blueprint.model,
         color=resolve_color(blueprint.color_name),
         scale=Vec3(blueprint.scale.x, blueprint.scale.y, blueprint.scale.z),
         position=Vec3(blueprint.position.x, blueprint.position.y, blueprint.position.z),
     )
+    entity.shader = LIT_SHADER
 
 
 def configure_window(settings: GameSettings) -> None:
@@ -40,39 +56,43 @@ def spawn_player() -> Entity:
     """Create a simple low-poly car as the controllable player entity."""
     car = Entity(position=Vec3(0.0, 0.35, 0.0))
 
-    Entity(
+    body = Entity(
         parent=car,
         model="cube",
         color=color_module.orange,
         scale=Vec3(1.8, 0.4, 3.2),
         position=Vec3(0.0, 0.0, 0.0),
     )
-    Entity(
+    body.shader = LIT_SHADER
+    cabin = Entity(
         parent=car,
         model="cube",
         color=color_module.azure,
         scale=Vec3(1.3, 0.45, 1.4),
         position=Vec3(0.0, 0.42, -0.2),
     )
-    Entity(
+    cabin.shader = LIT_SHADER
+    marker = Entity(
         parent=car,
         model="cube",
         color=color_module.red,
         scale=Vec3(0.35, 0.2, 0.25),
         position=Vec3(0.0, 0.12, 1.55),
     )
+    marker.shader = LIT_SHADER
 
     wheel_color = color_module.black
     wheel_scale = Vec3(0.42, 0.42, 0.42)
     for x_pos in (-0.85, 0.85):
         for z_pos in (-1.1, 1.1):
-            Entity(
+            wheel = Entity(
                 parent=car,
                 model="sphere",
                 color=wheel_color,
                 scale=wheel_scale,
                 position=Vec3(x_pos, -0.18, z_pos),
             )
+            wheel.shader = LIT_SHADER
 
     return car
 
@@ -104,13 +124,61 @@ def create_controls_hint() -> None:
     Text(
         text=(
             "Move: arrow keys (forward/back + strafe)\n"
-            "Turn: page up/down + mouse (captured)"
+            "Turn: page up/down + mouse (captured)\n"
+            "Zoom: mouse wheel"
         ),
         x=-0.86,
         y=0.47,
         scale=0.9,
         background=True,
     )
+
+
+def configure_lighting() -> None:
+    """Create key/fill lights with shadows for better scene depth."""
+    key_light = DirectionalLight(shadows=True)
+    key_light.color = color_module.white
+    key_light.look_at(Vec3(1.0, -1.0, -0.7))
+
+    fill_light = DirectionalLight(shadows=False)
+    fill_light.color = color_module.white33
+    fill_light.look_at(Vec3(-0.6, -0.4, 0.8))
+
+    ambient_light = AmbientLight()
+    ambient_light.color = color_module.rgba(0.22, 0.24, 0.28, 1.0)
+
+
+def compute_keyboard_axes(held: Mapping[str, float]) -> tuple[float, float, float]:
+    """Compute movement axes from the current held-key mapping."""
+    forward_amount = held.get("up arrow", 0.0) - held.get("down arrow", 0.0)
+    strafe_amount = held.get("right arrow", 0.0) - held.get("left arrow", 0.0)
+    turn_amount = held.get("page down", 0.0) - held.get("page up", 0.0)
+    return forward_amount, strafe_amount, turn_amount
+
+
+def compute_look_angles(
+    yaw_angle: float,
+    pitch_angle: float,
+    mouse_velocity: Vec3,
+    mouse_look_speed: float,
+) -> tuple[float, float]:
+    """Update yaw and pitch from mouse input and clamp pitch."""
+    next_yaw = yaw_angle + (mouse_velocity.x * mouse_look_speed)
+    next_pitch = pitch_angle + (mouse_velocity.y * mouse_look_speed)
+    next_pitch = max(-70.0, min(70.0, next_pitch))
+    return next_yaw, next_pitch
+
+
+def compute_zoom_distance(
+    current_distance: float,
+    scroll_direction: int,
+    min_distance: float,
+    max_distance: float,
+    zoom_step: float,
+) -> float:
+    """Adjust and clamp camera zoom distance from scroll input."""
+    next_distance = current_distance - (scroll_direction * zoom_step)
+    return max(min_distance, min(max_distance, next_distance))
 
 
 def install_movement_controller(
@@ -123,20 +191,43 @@ def install_movement_controller(
     controller = Entity()
     yaw_angle = player.rotation_y
     pitch_angle = 18.0
+    camera_distance = settings.camera_distance
 
     def controller_update() -> None:
         nonlocal yaw_angle
         nonlocal pitch_angle
+        nonlocal camera_distance
         yaw_angle, pitch_angle = apply_player_input(
             player,
             yaw_pivot,
             pitch_pivot,
             settings,
+            camera_distance,
             yaw_angle,
             pitch_angle,
         )
 
+    def controller_input(key: str) -> None:
+        nonlocal camera_distance
+        if key == "scroll up":
+            camera_distance = compute_zoom_distance(
+                camera_distance,
+                scroll_direction=1,
+                min_distance=settings.min_camera_distance,
+                max_distance=settings.max_camera_distance,
+                zoom_step=settings.zoom_step,
+            )
+        elif key == "scroll down":
+            camera_distance = compute_zoom_distance(
+                camera_distance,
+                scroll_direction=-1,
+                min_distance=settings.min_camera_distance,
+                max_distance=settings.max_camera_distance,
+                zoom_step=settings.zoom_step,
+            )
+
     controller.update = controller_update
+    controller.input = controller_input
     return controller
 
 
@@ -145,14 +236,13 @@ def apply_player_input(
     yaw_pivot: Entity,
     pitch_pivot: Entity,
     settings: GameSettings,
+    camera_distance: float,
     yaw_angle: float,
     pitch_angle: float,
 ) -> tuple[float, float]:
     """Apply keyboard movement and rotation to the player."""
     held = cast("dict[str, float]", getattr(ursina, "held_keys", {}))
-    forward_amount = held.get("up arrow", 0.0) - held.get("down arrow", 0.0)
-    strafe_amount = held.get("right arrow", 0.0) - held.get("left arrow", 0.0)
-    turn_amount = held.get("page down", 0.0) - held.get("page up", 0.0)
+    forward_amount, strafe_amount, turn_amount = compute_keyboard_axes(held)
     mouse_velocity = cast("Vec3", getattr(mouse, "velocity", Vec3(0.0, 0.0, 0.0)))
 
     # Ursina exposes frame delta via dynamic module attributes.
@@ -161,16 +251,19 @@ def apply_player_input(
     player.position += player.right * (strafe_amount * settings.move_speed * dt)
     player.rotation_y += turn_amount * settings.turn_speed * dt
 
-    yaw_angle += mouse_velocity.x * settings.mouse_look_speed
-
-    pitch_angle += mouse_velocity.y * settings.mouse_look_speed
-    pitch_angle = max(-70.0, min(70.0, pitch_angle))
+    yaw_angle, pitch_angle = compute_look_angles(
+        yaw_angle,
+        pitch_angle,
+        mouse_velocity,
+        settings.mouse_look_speed,
+    )
 
     yaw_pivot.world_position = player.world_position + Vec3(
         0.0, settings.camera_height, 0.0
     )
     yaw_pivot.rotation = Vec3(0.0, yaw_angle, 0.0)
     pitch_pivot.rotation = Vec3(pitch_angle, 0.0, 0.0)
+    camera.z = -camera_distance
     camera.rotation_z = 0.0
 
     return yaw_angle, pitch_angle
@@ -191,6 +284,7 @@ def run_game(settings: GameSettings | None = None) -> None:
     yaw_pivot, pitch_pivot = create_camera_orbit_rig(active_settings)
     configure_mouse_capture()
     create_controls_hint()
+    configure_lighting()
     install_movement_controller(player, yaw_pivot, pitch_pivot, active_settings)
 
     Sky()

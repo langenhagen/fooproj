@@ -16,3 +16,6 @@ class GameSettings:
     mouse_look_speed: float = 120.0
     camera_distance: float = 10.0
     camera_height: float = 1.1
+    min_camera_distance: float = 4.0
+    max_camera_distance: float = 18.0
+    zoom_step: float = 1.0
