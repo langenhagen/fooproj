@@ -1,6 +1,8 @@
 # fooproj
 
-Minimal Python project boilerplate using `pyenv` + `uv`.
+Third-person 3D Ursina driving sandbox in Python.
+
+This project is nearly entirely vibe coded.
 
 ## Requirements
 
@@ -10,10 +12,18 @@ Minimal Python project boilerplate using `pyenv` + `uv`.
 ## Quick start
 
 ```bash
+pyenv install -s 3.14.3
 pyenv local 3.14.3
 uv sync
 uv run fooproj
 ```
+
+## Controls
+
+- Arrow keys: move (forward/back + strafe left/right)
+- Page Up / Page Down: rotate car left/right
+- Mouse move: orbit camera (captured cursor)
+- Mouse wheel: zoom in/out (zoom-in is clamped, zoom-out unbounded)
 
 ## Full setup and checks
 
@@ -48,10 +58,10 @@ uv run --group lint vulture fooproj tests
 
 ## Project layout
 
-- `fooproj/`: application package
-- `fooproj/game/`: Ursina sandbox skeleton
+- `fooproj/`: application package and CLI entrypoint
+- `fooproj/game/`: runtime, input/camera controls, scene setup, lighting
 - `tests/`: test suite
-- `pyproject.toml`: project metadata and tool config
+- `pyproject.toml`: project metadata and tool/lint configuration
 
 ## Notes
 
