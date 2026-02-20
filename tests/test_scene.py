@@ -6,11 +6,13 @@ from fooproj.game.scene import starter_scene_blueprints
 
 
 def test_starter_scene_models() -> None:
-    """Define a plane and two cubes in the starter scene."""
+    """Define a ground plane plus multiple landmark cubes."""
     blueprints = starter_scene_blueprints()
     models = [blueprint.model for blueprint in blueprints]
     checker = TestCase()
-    checker.assertEqual(models, ["plane", "cube", "cube"])
+    checker.assertEqual(models[0], "plane")
+    checker.assertTrue(all(model == "cube" for model in models[1:]))
+    checker.assertGreaterEqual(len(models), 9)
 
 
 def test_starter_scene_positions_are_above_ground() -> None:
