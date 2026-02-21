@@ -47,13 +47,23 @@ class OrbitRig:
     pitch_pivot: Entity
 
 
+@dataclass(slots=True)
+class DynamicProp:
+    """Simple dynamic prop state for lightweight physics interactions."""
+
+    entity: Entity
+    velocity: Vec3
+    radius: float
+    mass: float
+
+
 def resolve_color(color_name: str) -> Color:
     """Resolve a color name from Ursina's built-in color palette."""
     return cast("Color", getattr(color_module, color_name, color_module.white))
 
 
-def spawn_entity(blueprint: EntityBlueprint) -> None:
-    """Spawn one entity from a scene blueprint."""
+def spawn_entity(blueprint: EntityBlueprint) -> Entity:
+    """Spawn one entity from a scene blueprint and return it."""
     entity = Entity(
         model=blueprint.model,
         color=resolve_color(blueprint.color_name),
@@ -61,6 +71,7 @@ def spawn_entity(blueprint: EntityBlueprint) -> None:
         position=Vec3(blueprint.position.x, blueprint.position.y, blueprint.position.z),
     )
     entity.shader = LIT_SHADER
+    return entity
 
 
 def configure_window(settings: GameSettings) -> None:
@@ -113,6 +124,26 @@ def spawn_player() -> Entity:
             wheel.shader = LIT_SHADER
 
     return car
+
+
+def compute_prop_mass(scale: Vec3) -> float:
+    """Approximate prop mass from visual volume."""
+    volume = max(0.1, float(scale.x) * float(scale.y) * float(scale.z))
+    return max(0.6, volume)
+
+
+def blueprint_to_dynamic_prop(
+    entity: Entity, blueprint: EntityBlueprint
+) -> DynamicProp:
+    """Create dynamic-physics state for a spawned scene entity."""
+    scale = Vec3(blueprint.scale.x, blueprint.scale.y, blueprint.scale.z)
+    radius = max(scale.x, scale.y, scale.z) * 0.5
+    return DynamicProp(
+        entity=entity,
+        velocity=Vec3(0.0, 0.0, 0.0),
+        radius=radius,
+        mass=compute_prop_mass(scale),
+    )
 
 
 def configure_camera() -> None:
@@ -200,6 +231,83 @@ def compute_zoom_distance(
         return max(min_distance, next_distance)
 
     return max(min_distance, min(max_distance, next_distance))
+
+
+def compute_player_velocity(
+    current_position: Vec3, previous_position: Vec3, dt: float
+) -> Vec3:
+    """Compute frame velocity from two positions and a delta time."""
+    if dt <= 0.0:
+        return Vec3(0.0, 0.0, 0.0)
+
+    inverse_dt = 1.0 / dt
+    return Vec3(
+        (current_position.x - previous_position.x) * inverse_dt,
+        (current_position.y - previous_position.y) * inverse_dt,
+        (current_position.z - previous_position.z) * inverse_dt,
+    )
+
+
+def resolve_ground_contact(
+    position_y: float,
+    velocity_y: float,
+    radius: float,
+) -> tuple[float, float]:
+    """Clamp a prop above ground and bounce vertical velocity."""
+    if position_y >= radius:
+        return position_y, velocity_y
+
+    next_y = radius
+    next_velocity_y = velocity_y
+    if velocity_y < 0.0:
+        next_velocity_y = -velocity_y * 0.35
+        if abs(next_velocity_y) < 0.25:
+            next_velocity_y = 0.0
+
+    return next_y, next_velocity_y
+
+
+def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) -> Entity:
+    """Attach simple prop physics and player impact responses."""
+    controller = Entity()
+    previous_player_position = Vec3(player.position)
+
+    def controller_update() -> None:
+        nonlocal previous_player_position
+
+        dt = cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009  # B009: getattr-with-constant
+        player_velocity = compute_player_velocity(
+            player.position, previous_player_position, dt
+        )
+        previous_player_position = Vec3(player.position)
+
+        for prop in props:
+            prop.velocity.y -= 9.81 * dt
+
+            to_prop = prop.entity.position - player.position
+            distance = to_prop.length()
+            impact_radius = 1.7 + prop.radius
+            player_speed = player_velocity.length()
+            if distance < impact_radius and player_speed > 0.1:
+                push_dir = to_prop.normalized() if distance > 0.0001 else player.forward
+                prop.velocity += push_dir * (player_speed * (0.8 / prop.mass))
+                prop.velocity.y = max(prop.velocity.y, 1.6)
+
+            prop.entity.position += prop.velocity * dt
+
+            next_y, next_velocity_y = resolve_ground_contact(
+                prop.entity.y,
+                prop.velocity.y,
+                prop.radius,
+            )
+            prop.entity.y = next_y
+            prop.velocity.y = next_velocity_y
+            if next_y <= prop.radius + 0.001:
+                prop.velocity.x *= 0.97
+                prop.velocity.z *= 0.97
+
+    controller.update = controller_update
+    return controller
 
 
 def install_movement_controller(
@@ -295,8 +403,11 @@ def run_game(settings: GameSettings | None = None) -> None:
 
     configure_window(active_settings)
 
+    dynamic_props: list[DynamicProp] = []
     for blueprint in starter_scene_blueprints():
-        spawn_entity(blueprint)
+        entity = spawn_entity(blueprint)
+        if blueprint.model != "plane":
+            dynamic_props.append(blueprint_to_dynamic_prop(entity, blueprint))
 
     player = spawn_player()
     configure_camera()
@@ -305,6 +416,7 @@ def run_game(settings: GameSettings | None = None) -> None:
     create_controls_hint()
     configure_lighting()
     install_movement_controller(player, orbit_rig, active_settings)
+    install_prop_physics_controller(player, dynamic_props)
 
     Sky()
     # Ursina's app proxy is typed as object here, so dynamic access is needed.

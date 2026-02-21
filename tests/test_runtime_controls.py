@@ -7,7 +7,10 @@ from ursina import Vec3
 from fooproj.game.runtime import (
     compute_keyboard_axes,
     compute_look_angles,
+    compute_player_velocity,
+    compute_prop_mass,
     compute_zoom_distance,
+    resolve_ground_contact,
 )
 
 
@@ -78,3 +81,49 @@ def test_compute_zoom_distance_without_max_limit() -> None:
     distance = compute_zoom_distance(18.0, -1, 4.0, None, 6.0)
     checker = TestCase()
     checker.assertEqual(distance, 24.0)
+
+
+def test_compute_player_velocity_uses_delta_time() -> None:
+    """Calculate player frame velocity from position delta and dt."""
+    velocity = compute_player_velocity(
+        Vec3(2.0, 0.0, -4.0),
+        Vec3(1.0, 0.0, -2.0),
+        0.5,
+    )
+    checker = TestCase()
+    checker.assertEqual(velocity, Vec3(2.0, 0.0, -4.0))
+
+
+def test_compute_player_velocity_handles_zero_dt() -> None:
+    """Return zero velocity when dt is zero or negative."""
+    velocity = compute_player_velocity(
+        Vec3(10.0, 0.0, 5.0),
+        Vec3(1.0, 0.0, -2.0),
+        0.0,
+    )
+    checker = TestCase()
+    checker.assertEqual(velocity, Vec3(0.0, 0.0, 0.0))
+
+
+def test_resolve_ground_contact_bounces_and_clamps() -> None:
+    """Clamp below-ground props and reverse downward velocity."""
+    y_pos, y_vel = resolve_ground_contact(position_y=0.1, velocity_y=-3.0, radius=0.45)
+    checker = TestCase()
+    checker.assertEqual(y_pos, 0.45)
+    checker.assertAlmostEqual(y_vel, 1.05, places=5)
+
+
+def test_resolve_ground_contact_keeps_above_ground_state() -> None:
+    """Leave position and velocity unchanged when already above ground."""
+    y_pos, y_vel = resolve_ground_contact(position_y=0.8, velocity_y=0.2, radius=0.45)
+    checker = TestCase()
+    checker.assertEqual(y_pos, 0.8)
+    checker.assertEqual(y_vel, 0.2)
+
+
+def test_compute_prop_mass_scales_with_size() -> None:
+    """Give larger props higher mass than smaller ones."""
+    small = compute_prop_mass(Vec3(0.8, 0.8, 0.8))
+    large = compute_prop_mass(Vec3(1.0, 2.5, 1.0))
+    checker = TestCase()
+    checker.assertGreater(large, small)
