@@ -1,6 +1,7 @@
 """Ursina runtime bootstrap functions."""
 
 import importlib
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -44,6 +45,11 @@ CAR_BASE_TEXTURE_FILE = (
 )
 CAR_BASE_TEXTURE_PATH = "assets/De_Tomaso_Textures/Detomasop72_Base_Color.png"
 CAR_TARGET_LENGTH = 4.8
+BOUNCE_DAMPING = 0.35
+MIN_BOUNCE_SPEED = 0.25
+MIN_IMPACT_SPEED = 0.1
+NORMALIZE_EPSILON = 0.0001
+GROUND_FRICTION = 0.97
 
 
 @dataclass(slots=True)
@@ -78,13 +84,38 @@ def resolve_color(color_name: str) -> Color:
     return cast("Color", getattr(color_module, color_name, color_module.white))
 
 
+def mark_lit_shadowed(entity: Entity) -> Entity:
+    """Apply the project-default lit shader and shadow camera mask."""
+    entity.shader = LIT_SHADER
+    entity.show(0b0001)
+    return entity
+
+
+def side_label(x_pos: float) -> str:
+    """Return stable left/right labels from signed x positions."""
+    return "left" if x_pos < 0.0 else "right"
+
+
+def wheel_label(x_pos: float, z_pos: float) -> str:
+    """Return stable wheel labels from wheel-local positions."""
+    axle_label = "front" if z_pos > 0.0 else "rear"
+    return f"{axle_label}_{side_label(x_pos)}"
+
+
+def get_frame_dt() -> float:
+    """Read frame delta from Ursina's dynamic runtime module."""
+    # Ursina exposes frame delta via dynamic module attributes.
+    # B009: getattr-with-constant; ursina.time.dt is dynamic at runtime.
+    return cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009
+
+
 def spawn_entity(blueprint: EntityBlueprint) -> Entity:
     """Spawn one entity from a scene blueprint and return it."""
     # Stable names make runtime inspection in Ursina's entity list easier.
     entity_name = (
         f"world_{blueprint.model}_"
-        f"{int(round(blueprint.position.x))}_"
-        f"{int(round(blueprint.position.z))}"
+        f"{round(blueprint.position.x)}_"
+        f"{round(blueprint.position.z)}"
     )
     entity = Entity(
         name=entity_name,
@@ -93,9 +124,7 @@ def spawn_entity(blueprint: EntityBlueprint) -> Entity:
         scale=Vec3(blueprint.scale.x, blueprint.scale.y, blueprint.scale.z),
         position=Vec3(blueprint.position.x, blueprint.position.y, blueprint.position.z),
     )
-    entity.shader = LIT_SHADER
-    entity.show(0b0001)
-    return entity
+    return mark_lit_shadowed(entity)
 
 
 def configure_window(settings: GameSettings) -> None:
@@ -125,9 +154,7 @@ def add_car_part(
     )
     if rotation is not None:
         part.rotation = rotation
-    part.shader = LIT_SHADER
-    part.show(0b0001)
-    return part
+    return mark_lit_shadowed(part)
 
 
 def spawn_primitive_player() -> Entity:
@@ -226,10 +253,10 @@ def spawn_primitive_player() -> Entity:
 
     # Side skirts.
     for x_pos in (-1.04, 1.04):
-        side_label = "left" if x_pos < 0.0 else "right"
+        side_name = side_label(x_pos)
         add_car_part(
             parent=car,
-            name=f"car_skirt_{side_label}",
+            name=f"car_skirt_{side_name}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.11, 0.19, 2.85),
@@ -238,10 +265,10 @@ def spawn_primitive_player() -> Entity:
 
     # Front headlights and rear lights.
     for x_pos in (-0.72, 0.72):
-        side_label = "left" if x_pos < 0.0 else "right"
+        side_name = side_label(x_pos)
         add_car_part(
             parent=car,
-            name=f"car_headlight_{side_label}",
+            name=f"car_headlight_{side_name}",
             model="sphere",
             color_value=color_module.yellow,
             scale=Vec3(0.24, 0.24, 0.24),
@@ -249,7 +276,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
-            name=f"car_taillight_{side_label}",
+            name=f"car_taillight_{side_name}",
             model="sphere",
             color_value=color_module.red,
             scale=Vec3(0.22, 0.22, 0.22),
@@ -258,10 +285,10 @@ def spawn_primitive_player() -> Entity:
 
     # Mirrors.
     for x_pos in (-1.05, 1.05):
-        side_label = "left" if x_pos < 0.0 else "right"
+        side_name = side_label(x_pos)
         add_car_part(
             parent=car,
-            name=f"car_mirror_arm_{side_label}",
+            name=f"car_mirror_arm_{side_name}",
             model="cube",
             color_value=color_module.gray,
             scale=Vec3(0.09, 0.18, 0.09),
@@ -269,7 +296,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
-            name=f"car_mirror_cap_{side_label}",
+            name=f"car_mirror_cap_{side_name}",
             model="cube",
             color_value=color_module.light_gray,
             scale=Vec3(0.16, 0.07, 0.2),
@@ -278,10 +305,10 @@ def spawn_primitive_player() -> Entity:
 
     # Rear spoiler.
     for x_pos in (-0.56, 0.56):
-        side_label = "left" if x_pos < 0.0 else "right"
+        side_name = side_label(x_pos)
         add_car_part(
             parent=car,
-            name=f"car_spoiler_post_{side_label}",
+            name=f"car_spoiler_post_{side_name}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.12, 0.32, 0.12),
@@ -299,12 +326,10 @@ def spawn_primitive_player() -> Entity:
     # Wheels, hubs, and wheel bars.
     wheel_offsets = ((-1.12, 1.55), (1.12, 1.55), (-1.12, -1.55), (1.12, -1.55))
     for x_pos, z_pos in wheel_offsets:
-        side_label = "left" if x_pos < 0.0 else "right"
-        axle_label = "front" if z_pos > 0.0 else "rear"
-        wheel_label = f"{axle_label}_{side_label}"
+        wheel_name = wheel_label(x_pos, z_pos)
         add_car_part(
             parent=car,
-            name=f"car_wheel_tire_{wheel_label}",
+            name=f"car_wheel_tire_{wheel_name}",
             model="sphere",
             color_value=color_module.black,
             scale=Vec3(0.62, 0.62, 0.62),
@@ -312,7 +337,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
-            name=f"car_wheel_hub_{wheel_label}",
+            name=f"car_wheel_hub_{wheel_name}",
             model="sphere",
             color_value=color_module.light_gray,
             scale=Vec3(0.28, 0.28, 0.28),
@@ -320,7 +345,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
-            name=f"car_wheel_bar_{wheel_label}",
+            name=f"car_wheel_bar_{wheel_name}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.72, 0.12, 0.16),
@@ -330,50 +355,77 @@ def spawn_primitive_player() -> Entity:
     return car
 
 
+def normalize_loaded_car_model(model: object) -> None:
+    """Scale and center imported car mesh to a consistent gameplay size."""
+    get_tight_bounds = getattr(model, "getTightBounds", None)
+    set_scale = getattr(model, "setScale", None)
+    set_pos = getattr(model, "setPos", None)
+    if not callable(get_tight_bounds):
+        return
+    if not callable(set_scale) or not callable(set_pos):
+        return
+
+    bounds = cast("tuple[Vec3, Vec3] | None", get_tight_bounds())
+    if bounds is None:
+        return
+
+    min_point, max_point = bounds
+    size_x = float(max_point.x - min_point.x)
+    size_z = float(max_point.z - min_point.z)
+    base_length = max(size_x, size_z)
+    if base_length <= 0.0:
+        return
+
+    scale_factor = CAR_TARGET_LENGTH / base_length
+    set_scale(scale_factor)
+    set_pos(
+        -(float(min_point.x) + size_x * 0.5) * scale_factor,
+        -float(min_point.y) * scale_factor,
+        -(float(min_point.z) + size_z * 0.5) * scale_factor,
+    )
+
+
+def spawn_imported_player() -> Entity | None:
+    """Try to spawn imported car model and return None on load failure."""
+    if not CAR_MODEL_FILE.exists():
+        return None
+
+    loader = getattr(getattr(application, "base", None), "loader", None)
+    if loader is None:
+        return None
+
+    with suppress(Exception):
+        model = loader.loadModel(str(CAR_MODEL_FILE))
+        is_empty_callable = getattr(model, "isEmpty", None)
+        is_empty = bool(is_empty_callable()) if callable(is_empty_callable) else False
+        if is_empty:
+            return None
+
+        # Imported OBJ has inverted winding in this asset pack.
+        panda3d_core = importlib.import_module("panda3d.core")
+        cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
+        if cull_face_attrib is not None:
+            model.setAttrib(cull_face_attrib.makeReverse())
+
+        normalize_loaded_car_model(model)
+
+        car = Entity(
+            name="player_car_imported_root",
+            model=model,
+            position=Vec3(0.0, 0.0, 0.0),
+        )
+        if CAR_BASE_TEXTURE_FILE.exists():
+            car.texture = CAR_BASE_TEXTURE_PATH
+        return mark_lit_shadowed(car)
+
+    return None
+
+
 def spawn_player() -> Entity:
     """Spawn the external car model when available, else use fallback."""
-    if CAR_MODEL_FILE.exists():
-        loader = getattr(getattr(application, "base", None), "loader", None)
-        if loader is not None:
-            try:
-                model = loader.loadModel(str(CAR_MODEL_FILE))
-                is_empty_callable = getattr(model, "isEmpty", None)
-                is_empty = (
-                    bool(is_empty_callable()) if callable(is_empty_callable) else False
-                )
-                if not is_empty:
-                    # Imported OBJ has inverted winding in this asset pack.
-                    panda3d_core = importlib.import_module("panda3d.core")
-                    cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
-                    if cull_face_attrib is not None:
-                        model.setAttrib(cull_face_attrib.makeReverse())
-                    bounds = model.getTightBounds()
-                    if bounds is not None:
-                        min_point, max_point = bounds
-                        size_x = float(max_point.x - min_point.x)
-                        size_z = float(max_point.z - min_point.z)
-                        base_length = max(size_x, size_z)
-                        if base_length > 0.0:
-                            scale_factor = CAR_TARGET_LENGTH / base_length
-                            model.setScale(scale_factor)
-                            model.setPos(
-                                -(float(min_point.x) + size_x * 0.5) * scale_factor,
-                                -float(min_point.y) * scale_factor,
-                                -(float(min_point.z) + size_z * 0.5) * scale_factor,
-                            )
-                    car = Entity(
-                        name="player_car_imported_root",
-                        model=model,
-                        position=Vec3(0.0, 0.0, 0.0),
-                    )
-                    if CAR_BASE_TEXTURE_FILE.exists():
-                        car.texture = CAR_BASE_TEXTURE_PATH
-                    car.shader = LIT_SHADER
-                    car.show(0b0001)
-                    return car
-            except Exception:
-                pass
-
+    imported_player = spawn_imported_player()
+    if imported_player is not None:
+        return imported_player
     return spawn_primitive_player()
 
 
@@ -384,7 +436,8 @@ def compute_prop_mass(scale: Vec3) -> float:
 
 
 def blueprint_to_dynamic_prop(
-    entity: Entity, blueprint: EntityBlueprint
+    entity: Entity,
+    blueprint: EntityBlueprint,
 ) -> DynamicProp:
     """Create dynamic-physics state for a spawned scene entity."""
     scale = Vec3(blueprint.scale.x, blueprint.scale.y, blueprint.scale.z)
@@ -505,7 +558,9 @@ def compute_zoom_distance(
 
 
 def compute_player_velocity(
-    current_position: Vec3, previous_position: Vec3, dt: float
+    current_position: Vec3,
+    previous_position: Vec3,
+    dt: float,
 ) -> Vec3:
     """Compute frame velocity from two positions and a delta time."""
     if dt <= 0.0:
@@ -531,8 +586,8 @@ def resolve_ground_contact(
     next_y = radius
     next_velocity_y = velocity_y
     if velocity_y < 0.0:
-        next_velocity_y = -velocity_y * 0.35
-        if abs(next_velocity_y) < 0.25:
+        next_velocity_y = -velocity_y * BOUNCE_DAMPING
+        if abs(next_velocity_y) < MIN_BOUNCE_SPEED:
             next_velocity_y = 0.0
 
     return next_y, next_velocity_y
@@ -546,9 +601,11 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
     def controller_update() -> None:
         nonlocal previous_player_position
 
-        dt = cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009  # B009: getattr-with-constant
+        dt = get_frame_dt()
         player_velocity = compute_player_velocity(
-            player.position, previous_player_position, dt
+            player.position,
+            previous_player_position,
+            dt,
         )
         previous_player_position = Vec3(player.position)
 
@@ -559,8 +616,12 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
             distance = to_prop.length()
             impact_radius = CAR_IMPACT_RADIUS + prop.radius
             player_speed = player_velocity.length()
-            if distance < impact_radius and player_speed > 0.1:
-                push_dir = to_prop.normalized() if distance > 0.0001 else player.forward
+            if distance < impact_radius and player_speed > MIN_IMPACT_SPEED:
+                push_dir = (
+                    to_prop.normalized()
+                    if distance > NORMALIZE_EPSILON
+                    else player.forward
+                )
                 penetration = impact_radius - distance
                 if penetration > 0.0:
                     prop.entity.position += push_dir * (penetration * 0.4)
@@ -577,8 +638,8 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
             prop.entity.y = next_y
             prop.velocity.y = next_velocity_y
             if next_y <= prop.radius + 0.001:
-                prop.velocity.x *= 0.97
-                prop.velocity.z *= 0.97
+                prop.velocity.x *= GROUND_FRICTION
+                prop.velocity.z *= GROUND_FRICTION
 
     controller.update = controller_update
     return controller
@@ -641,9 +702,7 @@ def apply_player_input(
     forward_amount, strafe_amount, turn_amount = compute_keyboard_axes(held)
     mouse_velocity = cast("Vec3", getattr(mouse, "velocity", Vec3(0.0, 0.0, 0.0)))
 
-    # Ursina exposes frame delta via dynamic module attributes.
-    # B009: getattr-with-constant; ursina.time.dt is dynamic at runtime.
-    dt = cast("float", getattr(getattr(ursina, "time"), "dt", 0.0))  # noqa: B009
+    dt = get_frame_dt()
     player.position += player.forward * (
         forward_amount * movement_settings.move_speed * dt
     )
@@ -670,6 +729,16 @@ def apply_player_input(
     camera.rotation_z = 0.0
 
 
+def spawn_world_entities() -> list[DynamicProp]:
+    """Spawn static scene entities and return dynamic-physics props."""
+    dynamic_props: list[DynamicProp] = []
+    for blueprint in starter_scene_blueprints():
+        entity = spawn_entity(blueprint)
+        if blueprint.model != "plane":
+            dynamic_props.append(blueprint_to_dynamic_prop(entity, blueprint))
+    return dynamic_props
+
+
 def run_game(settings: GameSettings | None = None) -> None:
     """Run the Ursina starter sandbox."""
     active_settings = GameSettings() if settings is None else settings
@@ -678,11 +747,7 @@ def run_game(settings: GameSettings | None = None) -> None:
 
     configure_window(active_settings)
 
-    dynamic_props: list[DynamicProp] = []
-    for blueprint in starter_scene_blueprints():
-        entity = spawn_entity(blueprint)
-        if blueprint.model != "plane":
-            dynamic_props.append(blueprint_to_dynamic_prop(entity, blueprint))
+    dynamic_props = spawn_world_entities()
 
     player = spawn_player()
     configure_camera()

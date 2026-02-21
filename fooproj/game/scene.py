@@ -31,7 +31,7 @@ def starter_scene_blueprints() -> tuple[EntityBlueprint, ...]:
             color_name="light_gray",
             scale=Vec3(260.0, 1.0, 260.0),
             position=Vec3(0.0, 0.0, 0.0),
-        )
+        ),
     ]
 
     blueprints.extend(_perimeter_columns())
@@ -48,29 +48,37 @@ def _perimeter_columns() -> list[EntityBlueprint]:
     edge = 110.0
 
     for step in range(-90, 91, 18):
-        for x_pos, z_pos in ((float(step), edge), (float(step), -edge)):
+        edge_positions = (
+            (float(step), edge),
+            (float(step), -edge),
+            (edge, float(step)),
+            (-edge, float(step)),
+        )
+        for x_pos, z_pos in edge_positions:
             columns.append(
                 EntityBlueprint(
                     model="cube",
                     color_name=colors[color_index % len(colors)],
                     scale=Vec3(2.4, 6.2, 2.4),
                     position=Vec3(x_pos, 3.1, z_pos),
-                )
-            )
-            color_index += 1
-
-        for x_pos, z_pos in ((edge, float(step)), (-edge, float(step))):
-            columns.append(
-                EntityBlueprint(
-                    model="cube",
-                    color_name=colors[color_index % len(colors)],
-                    scale=Vec3(2.4, 6.2, 2.4),
-                    position=Vec3(x_pos, 3.1, z_pos),
-                )
+                ),
             )
             color_index += 1
 
     return columns
+
+
+def orbital_prop_scale(model_name: str, ring_index: int) -> Vec3:
+    """Return scale for orbital props based on model and ring."""
+    if model_name == "sphere":
+        sphere_scale = 1.1 + (ring_index * 0.18)
+        return Vec3(sphere_scale, sphere_scale, sphere_scale)
+
+    return Vec3(
+        1.2 + (ring_index * 0.16),
+        1.4 + (ring_index * 0.28),
+        1.2 + (ring_index * 0.16),
+    )
 
 
 def _orbital_props() -> list[EntityBlueprint]:
@@ -89,16 +97,7 @@ def _orbital_props() -> list[EntityBlueprint]:
 
             model_name = models[(ring_index + point_index) % len(models)]
             color_name = colors[(ring_index * 3 + point_index) % len(colors)]
-
-            if model_name == "sphere":
-                sphere_scale = 1.1 + (ring_index * 0.18)
-                scale = Vec3(sphere_scale, sphere_scale, sphere_scale)
-            else:
-                scale = Vec3(
-                    1.2 + (ring_index * 0.16),
-                    1.4 + (ring_index * 0.28),
-                    1.2 + (ring_index * 0.16),
-                )
+            scale = orbital_prop_scale(model_name, ring_index)
 
             props.append(
                 EntityBlueprint(
@@ -106,7 +105,7 @@ def _orbital_props() -> list[EntityBlueprint]:
                     color_name=color_name,
                     scale=scale,
                     position=Vec3(x_pos, scale.y * 0.5, z_pos),
-                )
+                ),
             )
 
     return props
@@ -133,7 +132,7 @@ def _cardinal_landmarks() -> list[EntityBlueprint]:
                 color_name=color_name,
                 scale=scale,
                 position=position,
-            )
+            ),
         )
 
     return landmarks
