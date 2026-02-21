@@ -1,6 +1,8 @@
 """Ursina runtime bootstrap functions."""
 
+import importlib
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import ursina
@@ -13,6 +15,7 @@ from ursina import (
     Sky,
     Text,
     Vec3,
+    application,
     camera,
     mouse,
     scene,
@@ -29,6 +32,17 @@ if TYPE_CHECKING:
 
 LIT_SHADER = cast("object", ursina_shaders.lit_with_shadows_shader)
 CAR_IMPACT_RADIUS = 1.75
+CAR_MODEL_FILE = (
+    Path(__file__).resolve().parents[2] / "assets" / "De_Tomaso_P72_2020.obj"
+)
+CAR_BASE_TEXTURE_FILE = (
+    Path(__file__).resolve().parents[2]
+    / "assets"
+    / "De_Tomaso_Textures"
+    / "Detomasop72_Base_Color.png"
+)
+CAR_BASE_TEXTURE_PATH = "assets/De_Tomaso_Textures/Detomasop72_Base_Color.png"
+CAR_TARGET_LENGTH = 4.8
 
 
 @dataclass(slots=True)
@@ -104,7 +118,7 @@ def add_car_part(
     return part
 
 
-def spawn_player() -> Entity:
+def spawn_primitive_player() -> Entity:
     """Create a richer low-poly sports car as the player entity."""
     car = Entity(position=Vec3(0.0, 0.48, 0.0))
 
@@ -275,6 +289,49 @@ def spawn_player() -> Entity:
         )
 
     return car
+
+
+def spawn_player() -> Entity:
+    """Spawn the external car model when available, else use fallback."""
+    if CAR_MODEL_FILE.exists():
+        loader = getattr(getattr(application, "base", None), "loader", None)
+        if loader is not None:
+            try:
+                model = loader.loadModel(str(CAR_MODEL_FILE))
+                is_empty_callable = getattr(model, "isEmpty", None)
+                is_empty = (
+                    bool(is_empty_callable()) if callable(is_empty_callable) else False
+                )
+                if not is_empty:
+                    panda3d_core = importlib.import_module("panda3d.core")
+                    cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
+                    if cull_face_attrib is not None:
+                        model.setAttrib(cull_face_attrib.makeReverse())
+                    bounds = model.getTightBounds()
+                    if bounds is not None:
+                        min_point, max_point = bounds
+                        size_x = float(max_point.x - min_point.x)
+                        size_z = float(max_point.z - min_point.z)
+                        base_length = max(size_x, size_z)
+                        if base_length > 0.0:
+                            scale_factor = CAR_TARGET_LENGTH / base_length
+                            model.setScale(scale_factor)
+                            model.setPos(
+                                -(float(min_point.x) + size_x * 0.5) * scale_factor,
+                                -float(min_point.y) * scale_factor,
+                                -(float(min_point.z) + size_z * 0.5) * scale_factor,
+                            )
+                    if CAR_BASE_TEXTURE_FILE.exists():
+                        return Entity(
+                            model=model,
+                            texture=CAR_BASE_TEXTURE_PATH,
+                            position=Vec3(0.0, 0.0, 0.0),
+                        )
+                    return Entity(model=model, position=Vec3(0.0, 0.0, 0.0))
+            except Exception:
+                pass
+
+    return spawn_primitive_player()
 
 
 def compute_prop_mass(scale: Vec3) -> float:
@@ -554,6 +611,7 @@ def run_game(settings: GameSettings | None = None) -> None:
     """Run the Ursina starter sandbox."""
     active_settings = GameSettings() if settings is None else settings
     app = cast("object", Ursina(development_mode=active_settings.development_mode))
+    application.asset_folder = Path(__file__).resolve().parents[2]
 
     configure_window(active_settings)
 
