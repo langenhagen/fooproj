@@ -10,6 +10,8 @@ Practical guidance for humans and coding agents working in this repository.
 - Search the web liberally and proactively when debugging or investigating or checking on how an API works.
 - Add comments and explicit entity/part names liberally in game/runtime code
   so scene structure is easy to inspect and debug.
+- Avoid over-engineering: prefer the simplest solution that keeps behavior
+  clear, maintainable, and testable.
 
 ## Project Stack
 

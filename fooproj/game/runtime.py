@@ -50,6 +50,7 @@ MIN_BOUNCE_SPEED = 0.25
 MIN_IMPACT_SPEED = 0.1
 NORMALIZE_EPSILON = 0.0001
 GROUND_FRICTION = 0.97
+SCROLL_DIRECTION_BY_KEY = {"scroll up": 1, "scroll down": -1}
 
 
 @dataclass(slots=True)
@@ -134,7 +135,10 @@ def configure_window(settings: GameSettings) -> None:
     window.fullscreen = settings.fullscreen
 
 
-def add_car_part(
+# PLR0913 / pylint R0913,R0917: explicit geometry parameters keep
+# primitive car part callsites readable and easy to tweak.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def add_car_part(  # noqa: PLR0913
     parent: Entity,
     name: str,
     model: str,
@@ -155,6 +159,9 @@ def add_car_part(
     if rotation is not None:
         part.rotation = rotation
     return mark_lit_shadowed(part)
+
+
+# pylint: enable=too-many-arguments,too-many-positional-arguments
 
 
 def spawn_primitive_player() -> Entity:
@@ -668,22 +675,17 @@ def install_movement_controller(
         )
 
     def controller_input(key: str) -> None:
-        if key == "scroll up":
-            control_state.camera_distance = compute_zoom_distance(
-                control_state.camera_distance,
-                scroll_direction=1,
-                min_distance=settings.camera.min_distance,
-                max_distance=settings.camera.max_distance,
-                zoom_step=settings.camera.zoom_step,
-            )
-        elif key == "scroll down":
-            control_state.camera_distance = compute_zoom_distance(
-                control_state.camera_distance,
-                scroll_direction=-1,
-                min_distance=settings.camera.min_distance,
-                max_distance=settings.camera.max_distance,
-                zoom_step=settings.camera.zoom_step,
-            )
+        scroll_direction = SCROLL_DIRECTION_BY_KEY.get(key)
+        if scroll_direction is None:
+            return
+
+        control_state.camera_distance = compute_zoom_distance(
+            control_state.camera_distance,
+            scroll_direction=scroll_direction,
+            min_distance=settings.camera.min_distance,
+            max_distance=settings.camera.max_distance,
+            zoom_step=settings.camera.zoom_step,
+        )
 
     controller.update = controller_update
     controller.input = controller_input
