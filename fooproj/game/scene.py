@@ -1,6 +1,7 @@
-"""Scene blueprints for the Ursina starter world."""
+"""Scene blueprints for the Ursina driving sandbox world."""
 
 from dataclasses import dataclass
+from math import cos, radians, sin
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,60 +24,116 @@ class EntityBlueprint:
 
 
 def starter_scene_blueprints() -> tuple[EntityBlueprint, ...]:
-    """Return entities for the default sandbox scene."""
-    return (
+    """Return entities for the expanded sandbox scene."""
+    blueprints: list[EntityBlueprint] = [
         EntityBlueprint(
             model="plane",
             color_name="light_gray",
-            scale=Vec3(24.0, 1.0, 24.0),
+            scale=Vec3(260.0, 1.0, 260.0),
             position=Vec3(0.0, 0.0, 0.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="red",
-            scale=Vec3(1.2, 1.2, 1.2),
-            position=Vec3(6.0, 0.6, 6.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="azure",
-            scale=Vec3(1.2, 1.2, 1.2),
-            position=Vec3(-6.0, 0.6, 6.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="orange",
-            scale=Vec3(1.2, 1.2, 1.2),
-            position=Vec3(6.0, 0.6, -6.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="violet",
-            scale=Vec3(1.2, 1.2, 1.2),
-            position=Vec3(-6.0, 0.6, -6.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="lime",
-            scale=Vec3(1.0, 2.5, 1.0),
-            position=Vec3(0.0, 1.25, 10.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="yellow",
-            scale=Vec3(1.0, 2.5, 1.0),
-            position=Vec3(10.0, 1.25, 0.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="cyan",
-            scale=Vec3(1.0, 2.5, 1.0),
-            position=Vec3(0.0, 1.25, -10.0),
-        ),
-        EntityBlueprint(
-            model="cube",
-            color_name="magenta",
-            scale=Vec3(1.0, 2.5, 1.0),
-            position=Vec3(-10.0, 1.25, 0.0),
-        ),
+        )
+    ]
+
+    blueprints.extend(_perimeter_columns())
+    blueprints.extend(_orbital_props())
+    blueprints.extend(_cardinal_landmarks())
+    return tuple(blueprints)
+
+
+def _perimeter_columns() -> list[EntityBlueprint]:
+    """Create a large boundary ring of heavy columns."""
+    columns: list[EntityBlueprint] = []
+    colors = ("cyan", "magenta", "yellow", "lime")
+    color_index = 0
+    edge = 110.0
+
+    for step in range(-90, 91, 18):
+        for x_pos, z_pos in ((float(step), edge), (float(step), -edge)):
+            columns.append(
+                EntityBlueprint(
+                    model="cube",
+                    color_name=colors[color_index % len(colors)],
+                    scale=Vec3(2.4, 6.2, 2.4),
+                    position=Vec3(x_pos, 3.1, z_pos),
+                )
+            )
+            color_index += 1
+
+        for x_pos, z_pos in ((edge, float(step)), (-edge, float(step))):
+            columns.append(
+                EntityBlueprint(
+                    model="cube",
+                    color_name=colors[color_index % len(colors)],
+                    scale=Vec3(2.4, 6.2, 2.4),
+                    position=Vec3(x_pos, 3.1, z_pos),
+                )
+            )
+            color_index += 1
+
+    return columns
+
+
+def _orbital_props() -> list[EntityBlueprint]:
+    """Create large concentric rings of mixed-shape dynamic props."""
+    props: list[EntityBlueprint] = []
+    models = ("cube", "sphere")
+    colors = ("red", "azure", "orange", "violet", "lime", "yellow", "cyan", "magenta")
+    radii = (18.0, 34.0, 52.0, 72.0, 94.0)
+    points_per_ring = 14
+
+    for ring_index, radius in enumerate(radii):
+        for point_index in range(points_per_ring):
+            angle = ((360.0 / points_per_ring) * point_index) + (ring_index * 8.0)
+            x_pos = sin(radians(angle)) * radius
+            z_pos = cos(radians(angle)) * radius
+
+            model_name = models[(ring_index + point_index) % len(models)]
+            color_name = colors[(ring_index * 3 + point_index) % len(colors)]
+
+            if model_name == "sphere":
+                sphere_scale = 1.1 + (ring_index * 0.18)
+                scale = Vec3(sphere_scale, sphere_scale, sphere_scale)
+            else:
+                scale = Vec3(
+                    1.2 + (ring_index * 0.16),
+                    1.4 + (ring_index * 0.28),
+                    1.2 + (ring_index * 0.16),
+                )
+
+            props.append(
+                EntityBlueprint(
+                    model=model_name,
+                    color_name=color_name,
+                    scale=scale,
+                    position=Vec3(x_pos, scale.y * 0.5, z_pos),
+                )
+            )
+
+    return props
+
+
+def _cardinal_landmarks() -> list[EntityBlueprint]:
+    """Create distant large landmarks to emphasize world scale."""
+    landmarks: list[EntityBlueprint] = []
+    layout = (
+        ("cube", "orange", Vec3(9.0, 16.0, 9.0), Vec3(0.0, 8.0, 118.0)),
+        ("cube", "azure", Vec3(9.0, 16.0, 9.0), Vec3(0.0, 8.0, -118.0)),
+        ("cube", "yellow", Vec3(9.0, 16.0, 9.0), Vec3(118.0, 8.0, 0.0)),
+        ("cube", "violet", Vec3(9.0, 16.0, 9.0), Vec3(-118.0, 8.0, 0.0)),
+        ("sphere", "lime", Vec3(7.0, 7.0, 7.0), Vec3(82.0, 3.5, 82.0)),
+        ("sphere", "magenta", Vec3(7.0, 7.0, 7.0), Vec3(-82.0, 3.5, 82.0)),
+        ("sphere", "cyan", Vec3(7.0, 7.0, 7.0), Vec3(82.0, 3.5, -82.0)),
+        ("sphere", "red", Vec3(7.0, 7.0, 7.0), Vec3(-82.0, 3.5, -82.0)),
     )
+
+    for model_name, color_name, scale, position in layout:
+        landmarks.append(
+            EntityBlueprint(
+                model=model_name,
+                color_name=color_name,
+                scale=scale,
+                position=position,
+            )
+        )
+
+    return landmarks

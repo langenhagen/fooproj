@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 
 LIT_SHADER = cast("object", ursina_shaders.lit_with_shadows_shader)
+CAR_IMPACT_RADIUS = 2.45
 
 
 @dataclass(slots=True)
@@ -81,47 +82,189 @@ def configure_window(settings: GameSettings) -> None:
     window.fullscreen = settings.fullscreen
 
 
-def spawn_player() -> Entity:
-    """Create a simple low-poly car as the controllable player entity."""
-    car = Entity(position=Vec3(0.0, 0.35, 0.0))
+def add_car_part(
+    parent: Entity,
+    model: str,
+    color_value: Color,
+    scale: Vec3,
+    position: Vec3,
+    rotation: Vec3 | None = None,
+) -> Entity:
+    """Create one shaded part for the player car prefab."""
+    part = Entity(
+        parent=parent,
+        model=model,
+        color=color_value,
+        scale=scale,
+        position=position,
+    )
+    if rotation is not None:
+        part.rotation = rotation
+    part.shader = LIT_SHADER
+    return part
 
-    body = Entity(
+
+def spawn_player() -> Entity:
+    """Create a richer low-poly sports car as the player entity."""
+    car = Entity(position=Vec3(0.0, 0.48, 0.0))
+
+    add_car_part(
         parent=car,
         model="cube",
-        color=color_module.orange,
-        scale=Vec3(1.8, 0.4, 3.2),
+        color_value=color_module.orange,
+        scale=Vec3(2.35, 0.46, 4.7),
         position=Vec3(0.0, 0.0, 0.0),
     )
-    body.shader = LIT_SHADER
-    cabin = Entity(
+    add_car_part(
         parent=car,
         model="cube",
-        color=color_module.azure,
-        scale=Vec3(1.3, 0.45, 1.4),
-        position=Vec3(0.0, 0.42, -0.2),
+        color_value=color_module.orange,
+        scale=Vec3(2.14, 0.38, 3.15),
+        position=Vec3(0.0, 0.4, -0.02),
     )
-    cabin.shader = LIT_SHADER
-    marker = Entity(
+    add_car_part(
         parent=car,
         model="cube",
-        color=color_module.red,
-        scale=Vec3(0.35, 0.2, 0.25),
-        position=Vec3(0.0, 0.12, 1.55),
+        color_value=color_module.orange,
+        scale=Vec3(2.08, 0.34, 1.9),
+        position=Vec3(0.0, 0.33, 1.5),
+        rotation=Vec3(4.0, 0.0, 0.0),
     )
-    marker.shader = LIT_SHADER
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.orange,
+        scale=Vec3(1.98, 0.3, 1.35),
+        position=Vec3(0.0, 0.33, -1.82),
+        rotation=Vec3(-3.0, 0.0, 0.0),
+    )
 
-    wheel_color = color_module.black
-    wheel_scale = Vec3(0.42, 0.42, 0.42)
-    for x_pos in (-0.85, 0.85):
-        for z_pos in (-1.1, 1.1):
-            wheel = Entity(
-                parent=car,
-                model="sphere",
-                color=wheel_color,
-                scale=wheel_scale,
-                position=Vec3(x_pos, -0.18, z_pos),
-            )
-            wheel.shader = LIT_SHADER
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.azure,
+        scale=Vec3(1.66, 0.36, 2.05),
+        position=Vec3(0.0, 0.82, -0.35),
+    )
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.azure,
+        scale=Vec3(1.4, 0.22, 1.55),
+        position=Vec3(0.0, 1.08, -0.35),
+    )
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.light_gray,
+        scale=Vec3(1.3, 0.2, 0.08),
+        position=Vec3(0.0, 0.92, 0.5),
+        rotation=Vec3(32.0, 0.0, 0.0),
+    )
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.light_gray,
+        scale=Vec3(1.2, 0.18, 0.08),
+        position=Vec3(0.0, 0.9, -1.2),
+        rotation=Vec3(-30.0, 0.0, 0.0),
+    )
+
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.dark_gray,
+        scale=Vec3(2.22, 0.18, 0.34),
+        position=Vec3(0.0, -0.03, 2.28),
+    )
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.dark_gray,
+        scale=Vec3(2.14, 0.18, 0.34),
+        position=Vec3(0.0, -0.03, -2.28),
+    )
+
+    for x_pos in (-1.03, 1.03):
+        add_car_part(
+            parent=car,
+            model="cube",
+            color_value=color_module.dark_gray,
+            scale=Vec3(0.11, 0.19, 2.85),
+            position=Vec3(x_pos, -0.03, 0.0),
+        )
+
+    for x_pos in (-0.72, 0.72):
+        add_car_part(
+            parent=car,
+            model="sphere",
+            color_value=color_module.yellow,
+            scale=Vec3(0.24, 0.24, 0.24),
+            position=Vec3(x_pos, 0.15, 2.24),
+        )
+        add_car_part(
+            parent=car,
+            model="sphere",
+            color_value=color_module.red,
+            scale=Vec3(0.22, 0.22, 0.22),
+            position=Vec3(x_pos, 0.18, -2.23),
+        )
+
+    for x_pos in (-1.14, 1.14):
+        add_car_part(
+            parent=car,
+            model="cube",
+            color_value=color_module.gray,
+            scale=Vec3(0.09, 0.18, 0.09),
+            position=Vec3(x_pos, 0.66, 0.48),
+        )
+        add_car_part(
+            parent=car,
+            model="cube",
+            color_value=color_module.light_gray,
+            scale=Vec3(0.16, 0.07, 0.2),
+            position=Vec3(x_pos * 1.03, 0.72, 0.48),
+        )
+
+    for x_pos in (-0.56, 0.56):
+        add_car_part(
+            parent=car,
+            model="cube",
+            color_value=color_module.dark_gray,
+            scale=Vec3(0.12, 0.35, 0.12),
+            position=Vec3(x_pos, 0.88, -2.06),
+        )
+    add_car_part(
+        parent=car,
+        model="cube",
+        color_value=color_module.dark_gray,
+        scale=Vec3(1.42, 0.08, 0.34),
+        position=Vec3(0.0, 1.06, -2.06),
+    )
+
+    wheel_offsets = ((-1.12, 1.55), (1.12, 1.55), (-1.12, -1.55), (1.12, -1.55))
+    for x_pos, z_pos in wheel_offsets:
+        add_car_part(
+            parent=car,
+            model="sphere",
+            color_value=color_module.black,
+            scale=Vec3(0.62, 0.62, 0.62),
+            position=Vec3(x_pos, -0.22, z_pos),
+        )
+        add_car_part(
+            parent=car,
+            model="sphere",
+            color_value=color_module.light_gray,
+            scale=Vec3(0.28, 0.28, 0.28),
+            position=Vec3(x_pos, -0.22, z_pos),
+        )
+        add_car_part(
+            parent=car,
+            model="cube",
+            color_value=color_module.dark_gray,
+            scale=Vec3(0.72, 0.12, 0.16),
+            position=Vec3(x_pos, -0.22, z_pos),
+        )
 
     return car
 
@@ -286,10 +429,13 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
 
             to_prop = prop.entity.position - player.position
             distance = to_prop.length()
-            impact_radius = 1.7 + prop.radius
+            impact_radius = CAR_IMPACT_RADIUS + prop.radius
             player_speed = player_velocity.length()
             if distance < impact_radius and player_speed > 0.1:
                 push_dir = to_prop.normalized() if distance > 0.0001 else player.forward
+                penetration = impact_radius - distance
+                if penetration > 0.0:
+                    prop.entity.position += push_dir * (penetration * 0.65)
                 prop.velocity += push_dir * (player_speed * (0.8 / prop.mass))
                 prop.velocity.y = max(prop.velocity.y, 1.6)
 
