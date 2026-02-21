@@ -14,6 +14,7 @@ from ursina import (
     Entity,
     Sky,
     Text,
+    Vec2,
     Vec3,
     application,
     camera,
@@ -86,6 +87,7 @@ def spawn_entity(blueprint: EntityBlueprint) -> Entity:
         position=Vec3(blueprint.position.x, blueprint.position.y, blueprint.position.z),
     )
     entity.shader = LIT_SHADER
+    entity.show(0b0001)
     return entity
 
 
@@ -115,6 +117,7 @@ def add_car_part(
     if rotation is not None:
         part.rotation = rotation
     part.shader = LIT_SHADER
+    part.show(0b0001)
     return part
 
 
@@ -322,12 +325,18 @@ def spawn_player() -> Entity:
                                 -(float(min_point.z) + size_z * 0.5) * scale_factor,
                             )
                     if CAR_BASE_TEXTURE_FILE.exists():
-                        return Entity(
+                        car = Entity(
                             model=model,
                             texture=CAR_BASE_TEXTURE_PATH,
                             position=Vec3(0.0, 0.0, 0.0),
                         )
-                    return Entity(model=model, position=Vec3(0.0, 0.0, 0.0))
+                        car.shader = LIT_SHADER
+                        car.show(0b0001)
+                        return car
+                    car = Entity(model=model, position=Vec3(0.0, 0.0, 0.0))
+                    car.shader = LIT_SHADER
+                    car.show(0b0001)
+                    return car
             except Exception:
                 pass
 
@@ -391,18 +400,36 @@ def create_controls_hint() -> None:
     )
 
 
-def configure_lighting() -> None:
-    """Create key/fill lights with shadows for better scene depth."""
-    key_light = DirectionalLight(shadows=True)
+def configure_lighting(focus_entity: Entity) -> None:
+    """Create one shadow-casting sun light and stable local shadow bounds."""
+    key_light = DirectionalLight(shadows=True, shadow_map_resolution=Vec2(8192, 8192))
     key_light.color = color_module.white
-    key_light.look_at(Vec3(1.0, -1.0, -0.7))
-
-    fill_light = DirectionalLight(shadows=False)
-    fill_light.color = color_module.white33
-    fill_light.look_at(Vec3(-0.6, -0.4, 0.8))
+    key_light.look_at(Vec3(0.8, -1.2, -0.5))
 
     ambient_light = AmbientLight()
     ambient_light.color = color_module.rgba(0.22, 0.24, 0.28, 1.0)
+
+    scene.set_shader_input("shadow_color", color_module.black66)
+    scene.set_shader_input("shadow_blur", 0.0008)
+    scene.set_shader_input("shadow_bias", 0.0005)
+    scene.set_shader_input("shadow_samples", 3)
+
+    shadow_bounds = Entity(
+        parent=focus_entity,
+        model="cube",
+        position=Vec3(0.0, 0.0, 0.0),
+        scale=Vec3(38.0, 20.0, 38.0),
+        color=color_module.clear,
+        unlit=True,
+    )
+    key_light.update_bounds(shadow_bounds)
+
+    shadow_controller = Entity()
+
+    def update_shadow_bounds() -> None:
+        key_light.update_bounds(shadow_bounds)
+
+    shadow_controller.update = update_shadow_bounds
 
 
 def compute_keyboard_axes(held: dict[str, float]) -> tuple[float, float, float]:
@@ -626,7 +653,7 @@ def run_game(settings: GameSettings | None = None) -> None:
     orbit_rig = create_camera_orbit_rig(active_settings)
     configure_mouse_capture()
     create_controls_hint()
-    configure_lighting()
+    configure_lighting(player)
     install_movement_controller(player, orbit_rig, active_settings)
     install_prop_physics_controller(player, dynamic_props)
 
