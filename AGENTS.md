@@ -8,6 +8,8 @@ Practical guidance for humans and coding agents working in this repository.
 - Prefer reliable, non-interactive commands and deterministic output.
 - Assume files may change while you work; re-read before final writes and commits.
 - Search the web liberally and proactively when debugging or investigating or checking on how an API works.
+- Add comments and explicit entity/part names liberally in game/runtime code
+  so scene structure is easy to inspect and debug.
 
 ## Project Stack
 
@@ -42,6 +44,9 @@ Prefer repo-local, reproducible commands:
 - Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
 - Optional personal lint sweep: `source .venv/bin/activate && l3`.
 - Optional personal autofix pass: `source .venv/bin/activate && rf`.
+- You can scope those tools to one file when iterating quickly:
+  - `source .venv/bin/activate && l3 path/to/file.py`
+  - `source .venv/bin/activate && rf path/to/file.py`
 
 Note: `l3` runs many tools and is slow. Use it sparingly, typically near
 milestones or before committing broader changes.
