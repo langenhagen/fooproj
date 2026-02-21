@@ -7,7 +7,7 @@ Practical guidance for humans and coding agents working in this repository.
 - Keep changes small, reviewable, and aligned with existing repo conventions.
 - Prefer reliable, non-interactive commands and deterministic output.
 - Assume files may change while you work; re-read before final writes and commits.
-- Search the web liberally when debugging or investigating
+- Search the web liberally and proactively when debugging or investigating or checking on how an API works.
 
 ## Project Stack
 
