@@ -31,6 +31,7 @@ Prefer repo-local, reproducible commands:
 
 - Sync dependencies: `uv sync`.
 - Run app entrypoint (game): `uv run fooproj`.
+- Consider using `scripts/debug-startup.sh` and then inspecting `__debug/out.log` to spot startup issues and logs quickly.
 - Run tests: `uv run pytest`.
 - Run linter: `uv run ruff check .`.
 - Format code: `uv run ruff format .`.
