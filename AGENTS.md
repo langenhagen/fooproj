@@ -88,6 +88,9 @@ Commit message DO:
 - Start the summary in imperative mood (for example `Add`, `Fix`, `Change`).
 - Keep the second line blank.
 - Wrap body text to about 72 columns.
+- Use real line breaks in the body; do not pass wrapped text as one line.
+- When using shell commits, prefer multiline `-m $'line1\nline2'` or a
+  heredoc body so line wraps are preserved.
 - Use simple line wraps in the body and keep one paragraph by default.
 - Add extra blank lines only when you intentionally start a new paragraph.
 
@@ -96,6 +99,11 @@ Commit message DON'T:
 - Do not use Conventional Commit prefixes.
 - Do not end the summary line with a period.
 - Do not include literal `\n` text in commit messages; use real newlines.
+
+Before finalizing a commit, verify formatting with:
+
+- `git log -1 --pretty=%B`
+- Ensure no body line exceeds roughly 72 characters.
 
 Never include secrets in commits (`.env*`, tokens, private keys, auth dumps).
 
