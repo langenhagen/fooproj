@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 class MovementSettings:
     """Movement and rotation speeds for the player vehicle."""
 
-    move_speed: float = 5.0
+    move_speed: float = 10.0
     turn_speed: float = 90.0
 
 
