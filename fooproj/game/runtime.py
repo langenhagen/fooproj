@@ -80,7 +80,14 @@ def resolve_color(color_name: str) -> Color:
 
 def spawn_entity(blueprint: EntityBlueprint) -> Entity:
     """Spawn one entity from a scene blueprint and return it."""
+    # Stable names make runtime inspection in Ursina's entity list easier.
+    entity_name = (
+        f"world_{blueprint.model}_"
+        f"{int(round(blueprint.position.x))}_"
+        f"{int(round(blueprint.position.z))}"
+    )
     entity = Entity(
+        name=entity_name,
         model=blueprint.model,
         color=resolve_color(blueprint.color_name),
         scale=Vec3(blueprint.scale.x, blueprint.scale.y, blueprint.scale.z),
@@ -100,6 +107,7 @@ def configure_window(settings: GameSettings) -> None:
 
 def add_car_part(
     parent: Entity,
+    name: str,
     model: str,
     color_value: Color,
     scale: Vec3,
@@ -109,6 +117,7 @@ def add_car_part(
     """Create one shaded part for the player car prefab."""
     part = Entity(
         parent=parent,
+        name=name,
         model=model,
         color=color_value,
         scale=scale,
@@ -123,11 +132,12 @@ def add_car_part(
 
 def spawn_primitive_player() -> Entity:
     """Create a richer low-poly sports car as the player entity."""
-    car = Entity(position=Vec3(0.0, 0.48, 0.0))
+    car = Entity(name="player_car_primitive_root", position=Vec3(0.0, 0.48, 0.0))
 
     # Car body: base shell, mid shell, nose, rear deck.
     add_car_part(
         parent=car,
+        name="car_body_base",
         model="cube",
         color_value=color_module.orange,
         scale=Vec3(2.3, 0.46, 4.6),
@@ -135,6 +145,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_body_mid",
         model="cube",
         color_value=color_module.orange,
         scale=Vec3(2.18, 0.44, 3.55),
@@ -142,6 +153,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_body_nose",
         model="cube",
         color_value=color_module.orange,
         scale=Vec3(2.1, 0.36, 1.65),
@@ -150,6 +162,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_body_rear",
         model="cube",
         color_value=color_module.orange,
         scale=Vec3(2.02, 0.32, 1.2),
@@ -160,6 +173,7 @@ def spawn_primitive_player() -> Entity:
     # Cabin and glass.
     add_car_part(
         parent=car,
+        name="car_cabin_shell",
         model="cube",
         color_value=color_module.azure,
         scale=Vec3(1.7, 0.42, 2.2),
@@ -167,6 +181,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_cabin_roof",
         model="cube",
         color_value=color_module.azure,
         scale=Vec3(1.35, 0.2, 1.45),
@@ -174,6 +189,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_windshield_front",
         model="cube",
         color_value=color_module.light_gray,
         scale=Vec3(1.26, 0.18, 0.08),
@@ -182,6 +198,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_windshield_rear",
         model="cube",
         color_value=color_module.light_gray,
         scale=Vec3(1.16, 0.17, 0.08),
@@ -192,6 +209,7 @@ def spawn_primitive_player() -> Entity:
     # Bumpers.
     add_car_part(
         parent=car,
+        name="car_bumper_front",
         model="cube",
         color_value=color_module.dark_gray,
         scale=Vec3(2.22, 0.18, 0.34),
@@ -199,6 +217,7 @@ def spawn_primitive_player() -> Entity:
     )
     add_car_part(
         parent=car,
+        name="car_bumper_rear",
         model="cube",
         color_value=color_module.dark_gray,
         scale=Vec3(2.14, 0.18, 0.34),
@@ -207,8 +226,10 @@ def spawn_primitive_player() -> Entity:
 
     # Side skirts.
     for x_pos in (-1.04, 1.04):
+        side_label = "left" if x_pos < 0.0 else "right"
         add_car_part(
             parent=car,
+            name=f"car_skirt_{side_label}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.11, 0.19, 2.85),
@@ -217,8 +238,10 @@ def spawn_primitive_player() -> Entity:
 
     # Front headlights and rear lights.
     for x_pos in (-0.72, 0.72):
+        side_label = "left" if x_pos < 0.0 else "right"
         add_car_part(
             parent=car,
+            name=f"car_headlight_{side_label}",
             model="sphere",
             color_value=color_module.yellow,
             scale=Vec3(0.24, 0.24, 0.24),
@@ -226,6 +249,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
+            name=f"car_taillight_{side_label}",
             model="sphere",
             color_value=color_module.red,
             scale=Vec3(0.22, 0.22, 0.22),
@@ -234,8 +258,10 @@ def spawn_primitive_player() -> Entity:
 
     # Mirrors.
     for x_pos in (-1.05, 1.05):
+        side_label = "left" if x_pos < 0.0 else "right"
         add_car_part(
             parent=car,
+            name=f"car_mirror_arm_{side_label}",
             model="cube",
             color_value=color_module.gray,
             scale=Vec3(0.09, 0.18, 0.09),
@@ -243,6 +269,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
+            name=f"car_mirror_cap_{side_label}",
             model="cube",
             color_value=color_module.light_gray,
             scale=Vec3(0.16, 0.07, 0.2),
@@ -251,8 +278,10 @@ def spawn_primitive_player() -> Entity:
 
     # Rear spoiler.
     for x_pos in (-0.56, 0.56):
+        side_label = "left" if x_pos < 0.0 else "right"
         add_car_part(
             parent=car,
+            name=f"car_spoiler_post_{side_label}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.12, 0.32, 0.12),
@@ -260,6 +289,7 @@ def spawn_primitive_player() -> Entity:
         )
     add_car_part(
         parent=car,
+        name="car_spoiler_wing",
         model="cube",
         color_value=color_module.dark_gray,
         scale=Vec3(1.42, 0.08, 0.28),
@@ -269,8 +299,12 @@ def spawn_primitive_player() -> Entity:
     # Wheels, hubs, and wheel bars.
     wheel_offsets = ((-1.12, 1.55), (1.12, 1.55), (-1.12, -1.55), (1.12, -1.55))
     for x_pos, z_pos in wheel_offsets:
+        side_label = "left" if x_pos < 0.0 else "right"
+        axle_label = "front" if z_pos > 0.0 else "rear"
+        wheel_label = f"{axle_label}_{side_label}"
         add_car_part(
             parent=car,
+            name=f"car_wheel_tire_{wheel_label}",
             model="sphere",
             color_value=color_module.black,
             scale=Vec3(0.62, 0.62, 0.62),
@@ -278,6 +312,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
+            name=f"car_wheel_hub_{wheel_label}",
             model="sphere",
             color_value=color_module.light_gray,
             scale=Vec3(0.28, 0.28, 0.28),
@@ -285,6 +320,7 @@ def spawn_primitive_player() -> Entity:
         )
         add_car_part(
             parent=car,
+            name=f"car_wheel_bar_{wheel_label}",
             model="cube",
             color_value=color_module.dark_gray,
             scale=Vec3(0.72, 0.12, 0.16),
@@ -306,6 +342,7 @@ def spawn_player() -> Entity:
                     bool(is_empty_callable()) if callable(is_empty_callable) else False
                 )
                 if not is_empty:
+                    # Imported OBJ has inverted winding in this asset pack.
                     panda3d_core = importlib.import_module("panda3d.core")
                     cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
                     if cull_face_attrib is not None:
@@ -324,16 +361,13 @@ def spawn_player() -> Entity:
                                 -float(min_point.y) * scale_factor,
                                 -(float(min_point.z) + size_z * 0.5) * scale_factor,
                             )
+                    car = Entity(
+                        name="player_car_imported_root",
+                        model=model,
+                        position=Vec3(0.0, 0.0, 0.0),
+                    )
                     if CAR_BASE_TEXTURE_FILE.exists():
-                        car = Entity(
-                            model=model,
-                            texture=CAR_BASE_TEXTURE_PATH,
-                            position=Vec3(0.0, 0.0, 0.0),
-                        )
-                        car.shader = LIT_SHADER
-                        car.show(0b0001)
-                        return car
-                    car = Entity(model=model, position=Vec3(0.0, 0.0, 0.0))
+                        car.texture = CAR_BASE_TEXTURE_PATH
                     car.shader = LIT_SHADER
                     car.show(0b0001)
                     return car
@@ -371,8 +405,8 @@ def configure_camera() -> None:
 
 def create_camera_orbit_rig(settings: GameSettings) -> OrbitRig:
     """Create yaw/pitch pivots used for stable camera orbit."""
-    yaw_pivot = Entity(parent=scene)
-    pitch_pivot = Entity(parent=yaw_pivot)
+    yaw_pivot = Entity(name="camera_yaw_pivot", parent=scene)
+    pitch_pivot = Entity(name="camera_pitch_pivot", parent=yaw_pivot)
     camera.parent = pitch_pivot
     camera.position = Vec3(0.0, 0.0, -settings.camera.distance)
     camera.rotation = Vec3(0.0, 0.0, 0.0)
@@ -416,6 +450,7 @@ def configure_lighting(focus_entity: Entity) -> None:
     scene.set_shader_input("shadow_samples", 3)
 
     shadow_bounds = Entity(
+        name="shadow_bounds_focus",
         parent=focus_entity,
         model="cube",
         position=Vec3(0.0, 0.0, 0.0),
@@ -425,7 +460,7 @@ def configure_lighting(focus_entity: Entity) -> None:
     )
     key_light.update_bounds(shadow_bounds)
 
-    shadow_controller = Entity()
+    shadow_controller = Entity(name="shadow_bounds_controller")
 
     def update_shadow_bounds() -> None:
         key_light.update_bounds(shadow_bounds)
@@ -505,7 +540,7 @@ def resolve_ground_contact(
 
 def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) -> Entity:
     """Attach simple prop physics and player impact responses."""
-    controller = Entity()
+    controller = Entity(name="prop_physics_controller")
     previous_player_position = Vec3(player.position)
 
     def controller_update() -> None:
@@ -555,7 +590,7 @@ def install_movement_controller(
     settings: GameSettings,
 ) -> Entity:
     """Attach per-frame movement handling to a controller entity."""
-    controller = Entity()
+    controller = Entity(name="player_input_controller")
     control_state = OrbitControlState(
         yaw_angle=player.rotation_y,
         pitch_angle=18.0,
