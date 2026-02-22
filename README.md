@@ -24,6 +24,19 @@ uv run fooproj
 - Page Up / Page Down: rotate car left/right
 - Mouse move: orbit camera (captured cursor)
 - Mouse wheel: zoom in/out (zoom-in is clamped, zoom-out unbounded)
+- `c`: toggle orbit/chase camera
+
+### Optional PS5 controller support
+
+If you have a PS5 controller connected, try these mappings:
+
+- R2 / L2: gas and brake/reverse (analog pressure supported)
+- L1 / R1: strafe left/right
+- Left stick X: steering
+- Right stick: camera look
+- D-pad left: toggle orbit/chase camera
+- D-pad up/down: zoom in/out
+- Impact rumble on collisions (silently disabled when no controller is available)
 
 ## Full setup and checks
 
