@@ -11,6 +11,7 @@ from fooproj.game.runtime import (
     compute_look_angles,
     compute_player_velocity,
     compute_prop_mass,
+    compute_smoothed_forward_speed,
     compute_zoom_distance,
     dominant_axis,
     resolve_ground_contact,
@@ -67,6 +68,26 @@ def test_dominant_axis_prefers_stronger_source() -> None:
     """Choose whichever input source has larger magnitude."""
     CHECKER.assertEqual(dominant_axis(0.2, -0.6), -0.6)
     CHECKER.assertEqual(dominant_axis(-0.8, 0.4), -0.8)
+
+
+def test_compute_smoothed_forward_speed_accelerates_to_target() -> None:
+    """Move speed toward requested target instead of snapping instantly."""
+    next_speed = compute_smoothed_forward_speed(0.0, 1.0, 60.0, 0.1)
+    CHECKER.assertGreater(next_speed, 0.0)
+    CHECKER.assertLess(next_speed, 60.0)
+
+
+def test_compute_smoothed_forward_speed_respects_analog_input() -> None:
+    """Use fractional trigger input for proportional target speed."""
+    next_speed = compute_smoothed_forward_speed(0.0, 0.5, 60.0, 0.1)
+    CHECKER.assertGreater(next_speed, 0.0)
+    CHECKER.assertLess(next_speed, 30.0)
+
+
+def test_compute_smoothed_forward_speed_brakes_when_reversing() -> None:
+    """Reverse input should reduce current forward speed rapidly."""
+    next_speed = compute_smoothed_forward_speed(30.0, -1.0, 60.0, 0.1)
+    CHECKER.assertLess(next_speed, 30.0)
 
 
 def test_compute_look_angles_updates_yaw_and_pitch() -> None:

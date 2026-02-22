@@ -65,6 +65,10 @@ CHASE_CAMERA_FOLLOW_SPEED = 8.5
 GAMEPAD_DEADZONE = 0.08
 GAMEPAD_LOOK_SENSITIVITY = 0.012
 RUMBLE_COOLDOWN_SECONDS = 0.12
+FORWARD_MAX_SPEED_MULTIPLIER = 3.0
+FORWARD_ACCELERATION_RATE = 9.0
+FORWARD_DECELERATION_RATE = 11.0
+FORWARD_BRAKE_RATE = 16.0
 
 
 @dataclass(slots=True)
@@ -75,6 +79,7 @@ class OrbitControlState:
     pitch_angle: float
     camera_distance: float
     chase_camera_enabled: bool = False
+    forward_speed: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -634,6 +639,33 @@ def compute_zoom_distance(
     return max(min_distance, min(max_distance, next_distance))
 
 
+def compute_smoothed_forward_speed(
+    current_speed: float,
+    forward_input: float,
+    max_speed: float,
+    dt: float,
+) -> float:
+    """Compute smooth forward speed from digital/analog acceleration input."""
+    if dt <= 0.0:
+        return current_speed
+
+    target_speed = forward_input * max_speed
+    if target_speed == 0.0:
+        response_rate = FORWARD_DECELERATION_RATE
+    elif current_speed == 0.0 or (target_speed * current_speed) > 0.0:
+        if abs(target_speed) >= abs(current_speed):
+            response_rate = FORWARD_ACCELERATION_RATE
+        else:
+            response_rate = FORWARD_DECELERATION_RATE
+    else:
+        response_rate = FORWARD_BRAKE_RATE
+
+    return cast(
+        "float",
+        lerp_exponential_decay(current_speed, target_speed, dt * response_rate),
+    )
+
+
 def compute_player_velocity(
     current_position: Vec3,
     previous_position: Vec3,
@@ -810,9 +842,14 @@ def apply_player_input(
     )
 
     dt = get_frame_dt()
-    player.position += player.forward * (
-        forward_amount * movement_settings.move_speed * dt
+    max_forward_speed = movement_settings.move_speed * FORWARD_MAX_SPEED_MULTIPLIER
+    control_state.forward_speed = compute_smoothed_forward_speed(
+        control_state.forward_speed,
+        forward_amount,
+        max_forward_speed,
+        dt,
     )
+    player.position += player.forward * (control_state.forward_speed * dt)
     player.position += player.right * (
         strafe_amount * movement_settings.move_speed * dt
     )
