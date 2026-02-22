@@ -522,7 +522,7 @@ def create_controls_hint() -> Text:
 def configure_lighting(focus_entity: Entity) -> None:
     """Create one shadow-casting sun light and stable local shadow bounds."""
     sun_direction = Vec3(0.8, -1.2, -0.5).normalized()
-    key_light = DirectionalLight(shadows=True, shadow_map_resolution=Vec2(8192, 8192))
+    key_light = DirectionalLight(shadows=True, shadow_map_resolution=Vec2(4096, 4096))
     key_light.color = color_module.white
     key_light.look_at(sun_direction)
 
