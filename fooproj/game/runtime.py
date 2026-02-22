@@ -508,7 +508,7 @@ def create_controls_hint() -> None:
             "Zoom: mouse wheel\n"
             "Camera: c / gamepad dpad left (orbit/chase)\n"
             "Zoom pad: gamepad dpad up/down\n"
-            "Controller: R2/L2 gas-brake, LS steer, RS look"
+            "Controller: R2/L2 gas-brake, L1/R1 strafe, LS steer, RS look"
         ),
         x=-0.86,
         y=0.47,
@@ -573,12 +573,16 @@ def compute_gamepad_axes(
     forward_amount = apply_deadzone(
         held.get("gamepad right trigger", 0.0) - held.get("gamepad left trigger", 0.0),
     )
+    strafe_amount = held.get("gamepad right shoulder", 0.0) - held.get(
+        "gamepad left shoulder",
+        0.0,
+    )
     turn_amount = apply_deadzone(held.get("gamepad left stick x", 0.0))
     look_x = apply_deadzone(held.get("gamepad right stick x", 0.0))
     look_y = apply_deadzone(held.get("gamepad right stick y", 0.0))
     return (
         forward_amount,
-        0.0,
+        strafe_amount,
         turn_amount,
         look_x * GAMEPAD_LOOK_SENSITIVITY,
         look_y * GAMEPAD_LOOK_SENSITIVITY,

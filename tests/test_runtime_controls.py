@@ -45,13 +45,15 @@ def test_compute_gamepad_axes_maps_ps_style_controls() -> None:
     held = {
         "gamepad right trigger": 0.9,
         "gamepad left trigger": 0.25,
+        "gamepad right shoulder": 1.0,
+        "gamepad left shoulder": 0.0,
         "gamepad left stick x": -0.5,
         "gamepad right stick x": 0.4,
         "gamepad right stick y": -0.2,
     }
     forward, strafe, turn, look_x, look_y = compute_gamepad_axes(held)
     CHECKER.assertAlmostEqual(forward, 0.65, places=5)
-    CHECKER.assertEqual(strafe, 0.0)
+    CHECKER.assertEqual(strafe, 1.0)
     CHECKER.assertEqual(turn, -0.5)
     CHECKER.assertAlmostEqual(look_x, 0.0048, places=5)
     CHECKER.assertAlmostEqual(look_y, -0.0024, places=5)
