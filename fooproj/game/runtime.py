@@ -51,10 +51,18 @@ MIN_BOUNCE_SPEED = 0.25
 MIN_IMPACT_SPEED = 0.1
 NORMALIZE_EPSILON = 0.0001
 GROUND_FRICTION = 0.97
-SCROLL_DIRECTION_BY_KEY = {"scroll up": 1, "scroll down": -1}
+SCROLL_DIRECTION_BY_KEY = {
+    "scroll up": 1,
+    "scroll down": -1,
+    "gamepad dpad up": 1,
+    "gamepad dpad down": -1,
+}
+CAMERA_TOGGLE_KEYS = {"c", "gamepad dpad left"}
 CHASE_CAMERA_HEIGHT_OFFSET = 0.75
 CHASE_CAMERA_LOOK_AHEAD = 3.6
 CHASE_CAMERA_FOLLOW_SPEED = 8.5
+GAMEPAD_DEADZONE = 0.08
+GAMEPAD_LOOK_SENSITIVITY = 0.012
 
 
 @dataclass(slots=True)
@@ -491,7 +499,9 @@ def create_controls_hint() -> None:
             "Move: arrow keys (forward/back + strafe)\n"
             "Turn: page up/down + mouse (captured)\n"
             "Zoom: mouse wheel\n"
-            "Camera: c (orbit/chase)"
+            "Camera: c / gamepad dpad left (orbit/chase)\n"
+            "Zoom pad: gamepad dpad up/down\n"
+            "Controller: R2/L2 gas-brake, LS steer, RS look"
         ),
         x=-0.86,
         y=0.47,
@@ -540,6 +550,58 @@ def compute_keyboard_axes(held: dict[str, float]) -> tuple[float, float, float]:
     strafe_amount = held.get("right arrow", 0.0) - held.get("left arrow", 0.0)
     turn_amount = held.get("page down", 0.0) - held.get("page up", 0.0)
     return forward_amount, strafe_amount, turn_amount
+
+
+def apply_deadzone(value: float, deadzone: float = GAMEPAD_DEADZONE) -> float:
+    """Clamp small analog stick/trigger noise to zero."""
+    if abs(value) < deadzone:
+        return 0.0
+    return value
+
+
+def compute_gamepad_axes(
+    held: dict[str, float],
+) -> tuple[float, float, float, float, float]:
+    """Map gamepad triggers/sticks to movement and camera look inputs."""
+    forward_amount = apply_deadzone(
+        held.get("gamepad right trigger", 0.0) - held.get("gamepad left trigger", 0.0),
+    )
+    turn_amount = apply_deadzone(held.get("gamepad left stick x", 0.0))
+    look_x = apply_deadzone(held.get("gamepad right stick x", 0.0))
+    look_y = apply_deadzone(held.get("gamepad right stick y", 0.0))
+    return (
+        forward_amount,
+        0.0,
+        turn_amount,
+        look_x * GAMEPAD_LOOK_SENSITIVITY,
+        look_y * GAMEPAD_LOOK_SENSITIVITY,
+    )
+
+
+def dominant_axis(primary: float, secondary: float) -> float:
+    """Return the stronger of two axis sources by absolute value."""
+    return primary if abs(primary) >= abs(secondary) else secondary
+
+
+def compute_control_axes(
+    held: dict[str, float],
+    mouse_velocity: Vec3,
+) -> tuple[float, float, float, Vec3]:
+    """Combine keyboard, gamepad, and mouse into one control vector set."""
+    keyboard_forward, keyboard_strafe, keyboard_turn = compute_keyboard_axes(held)
+    gamepad_forward, gamepad_strafe, gamepad_turn, gamepad_look_x, gamepad_look_y = (
+        compute_gamepad_axes(held)
+    )
+    return (
+        dominant_axis(keyboard_forward, gamepad_forward),
+        dominant_axis(keyboard_strafe, gamepad_strafe),
+        dominant_axis(keyboard_turn, gamepad_turn),
+        Vec3(
+            dominant_axis(mouse_velocity.x, gamepad_look_x),
+            dominant_axis(mouse_velocity.y, gamepad_look_y),
+            0.0,
+        ),
+    )
 
 
 def compute_look_angles(
@@ -681,7 +743,7 @@ def install_movement_controller(
         )
 
     def controller_input(key: str) -> None:
-        if key == "c":
+        if key in CAMERA_TOGGLE_KEYS:
             control_state.chase_camera_enabled = not control_state.chase_camera_enabled
             if control_state.chase_camera_enabled:
                 camera.parent = scene
@@ -716,8 +778,11 @@ def apply_player_input(
 ) -> None:
     """Apply keyboard movement and rotation to the player."""
     held = cast("dict[str, float]", getattr(ursina, "held_keys", {}))
-    forward_amount, strafe_amount, turn_amount = compute_keyboard_axes(held)
     mouse_velocity = cast("Vec3", getattr(mouse, "velocity", Vec3(0.0, 0.0, 0.0)))
+    forward_amount, strafe_amount, turn_amount, look_velocity = compute_control_axes(
+        held,
+        mouse_velocity,
+    )
 
     dt = get_frame_dt()
     player.position += player.forward * (
@@ -753,7 +818,7 @@ def apply_player_input(
     control_state.yaw_angle, control_state.pitch_angle = compute_look_angles(
         control_state.yaw_angle,
         control_state.pitch_angle,
-        mouse_velocity,
+        look_velocity,
         camera_settings.mouse_look_speed,
     )
 
