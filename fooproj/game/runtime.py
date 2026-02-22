@@ -19,6 +19,7 @@ from ursina import (
     Vec3,
     application,
     camera,
+    lerp_exponential_decay,
     mouse,
     scene,
     window,
@@ -51,6 +52,9 @@ MIN_IMPACT_SPEED = 0.1
 NORMALIZE_EPSILON = 0.0001
 GROUND_FRICTION = 0.97
 SCROLL_DIRECTION_BY_KEY = {"scroll up": 1, "scroll down": -1}
+CHASE_CAMERA_HEIGHT_OFFSET = 0.75
+CHASE_CAMERA_LOOK_AHEAD = 3.6
+CHASE_CAMERA_FOLLOW_SPEED = 8.5
 
 
 @dataclass(slots=True)
@@ -60,6 +64,7 @@ class OrbitControlState:
     yaw_angle: float
     pitch_angle: float
     camera_distance: float
+    chase_camera_enabled: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -485,7 +490,8 @@ def create_controls_hint() -> None:
         text=(
             "Move: arrow keys (forward/back + strafe)\n"
             "Turn: page up/down + mouse (captured)\n"
-            "Zoom: mouse wheel"
+            "Zoom: mouse wheel\n"
+            "Camera: c (orbit/chase)"
         ),
         x=-0.86,
         y=0.47,
@@ -675,6 +681,15 @@ def install_movement_controller(
         )
 
     def controller_input(key: str) -> None:
+        if key == "c":
+            control_state.chase_camera_enabled = not control_state.chase_camera_enabled
+            if control_state.chase_camera_enabled:
+                camera.parent = scene
+            else:
+                camera.parent = orbit_rig.pitch_pivot
+                camera.position = Vec3(0.0, 0.0, -control_state.camera_distance)
+                camera.rotation = Vec3(0.0, 0.0, 0.0)
+
         scroll_direction = SCROLL_DIRECTION_BY_KEY.get(key)
         if scroll_direction is None:
             return
@@ -713,6 +728,28 @@ def apply_player_input(
     )
     player.rotation_y += turn_amount * movement_settings.turn_speed * dt
 
+    if control_state.chase_camera_enabled:
+        target_position = (
+            player.world_position
+            - (player.forward * control_state.camera_distance)
+            + Vec3(0.0, camera_settings.height + CHASE_CAMERA_HEIGHT_OFFSET, 0.0)
+        )
+        camera.world_position = cast(
+            "Vec3",
+            lerp_exponential_decay(
+                camera.world_position,
+                target_position,
+                dt * CHASE_CAMERA_FOLLOW_SPEED,
+            ),
+        )
+        camera.look_at(
+            player.world_position
+            + (player.forward * CHASE_CAMERA_LOOK_AHEAD)
+            + Vec3(0.0, camera_settings.height * 0.5, 0.0),
+        )
+        camera.rotation_z = 0.0
+        return
+
     control_state.yaw_angle, control_state.pitch_angle = compute_look_angles(
         control_state.yaw_angle,
         control_state.pitch_angle,
@@ -727,7 +764,7 @@ def apply_player_input(
     )
     orbit_rig.yaw_pivot.rotation = Vec3(0.0, control_state.yaw_angle, 0.0)
     orbit_rig.pitch_pivot.rotation = Vec3(control_state.pitch_angle, 0.0, 0.0)
-    camera.z = -control_state.camera_distance
+    camera.position = Vec3(0.0, 0.0, -control_state.camera_distance)
     camera.rotation_z = 0.0
 
 
