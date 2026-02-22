@@ -499,14 +499,16 @@ def configure_mouse_capture() -> None:
     mouse.visible = False
 
 
-def create_controls_hint() -> None:
-    """Render controls help text."""
-    Text(
+def create_controls_hint() -> Text:
+    """Render controls help text and return its entity."""
+    return Text(
+        name="controls_hint_text",
         text=(
             "Move: arrow keys (forward/back + strafe)\n"
             "Turn: page up/down + mouse (captured)\n"
             "Zoom: mouse wheel\n"
             "Camera: c / gamepad dpad left (orbit/chase)\n"
+            "UI: u toggle controls\n"
             "Zoom pad: gamepad dpad up/down\n"
             "Controller: R2/L2 gas-brake, L1/R1 strafe, LS steer, RS look"
         ),
@@ -785,6 +787,7 @@ def install_movement_controller(
     player: Entity,
     orbit_rig: OrbitRig,
     settings: GameSettings,
+    controls_hint: Text,
 ) -> Entity:
     """Attach per-frame movement handling to a controller entity."""
     controller = Entity(name="player_input_controller")
@@ -804,6 +807,9 @@ def install_movement_controller(
         )
 
     def controller_input(key: str) -> None:
+        if key == "u":
+            controls_hint.enabled = not controls_hint.enabled
+
         if key in CAMERA_TOGGLE_KEYS:
             control_state.chase_camera_enabled = not control_state.chase_camera_enabled
             if control_state.chase_camera_enabled:
@@ -904,7 +910,7 @@ def spawn_world_entities() -> list[DynamicProp]:
     dynamic_props: list[DynamicProp] = []
     for blueprint in starter_scene_blueprints():
         entity = spawn_entity(blueprint)
-        if blueprint.model != "plane":
+        if blueprint.is_dynamic:
             dynamic_props.append(blueprint_to_dynamic_prop(entity, blueprint))
     return dynamic_props
 
@@ -923,9 +929,9 @@ def run_game(settings: GameSettings | None = None) -> None:
     configure_camera()
     orbit_rig = create_camera_orbit_rig(active_settings)
     configure_mouse_capture()
-    create_controls_hint()
+    controls_hint = create_controls_hint()
     configure_lighting(player)
-    install_movement_controller(player, orbit_rig, active_settings)
+    install_movement_controller(player, orbit_rig, active_settings, controls_hint)
     install_prop_physics_controller(player, dynamic_props)
 
     Sky()

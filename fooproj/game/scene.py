@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from math import cos, radians, sin
 
+COURSE_RADIUS = 44.0
+
 
 @dataclass(frozen=True, slots=True)
 class Vec3:
@@ -21,23 +23,135 @@ class EntityBlueprint:
     color_name: str
     scale: Vec3
     position: Vec3
+    is_dynamic: bool = True
 
 
 def starter_scene_blueprints() -> tuple[EntityBlueprint, ...]:
-    """Return entities for the expanded sandbox scene."""
-    blueprints: list[EntityBlueprint] = [
+    """Return entities for an obstacle-focused sandbox race arena."""
+    blueprints: list[EntityBlueprint] = []
+    blueprints.extend(_ground_layers())
+    blueprints.extend(_round_course_tiles())
+    blueprints.extend(_course_obstacles())
+    blueprints.extend(_trackside_houses())
+    blueprints.extend(_trackside_trees())
+    blueprints.extend(_perimeter_columns())
+    blueprints.extend(_cardinal_landmarks())
+    return tuple(blueprints)
+
+
+def _ground_layers() -> list[EntityBlueprint]:
+    """Create layered ground colors so the world reads like a track area."""
+    return [
         EntityBlueprint(
             model="plane",
-            color_name="light_gray",
-            scale=Vec3(260.0, 1.0, 260.0),
+            color_name="olive",
+            scale=Vec3(320.0, 1.0, 320.0),
             position=Vec3(0.0, 0.0, 0.0),
+            is_dynamic=False,
+        ),
+        EntityBlueprint(
+            model="plane",
+            color_name="green",
+            scale=Vec3(200.0, 1.0, 200.0),
+            position=Vec3(0.0, 0.02, 0.0),
+            is_dynamic=False,
+        ),
+        EntityBlueprint(
+            model="plane",
+            color_name="lime",
+            scale=Vec3(78.0, 1.0, 78.0),
+            position=Vec3(0.0, 0.04, 0.0),
+            is_dynamic=False,
         ),
     ]
 
-    blueprints.extend(_perimeter_columns())
-    blueprints.extend(_orbital_props())
-    blueprints.extend(_cardinal_landmarks())
-    return tuple(blueprints)
+
+def _round_course_tiles() -> list[EntityBlueprint]:
+    """Create a wide circular driving loop with colored curb markers."""
+    tiles: list[EntityBlueprint] = []
+    segments = 72
+    road_tile_scale = Vec3(4.8, 0.16, 4.8)
+
+    for segment_index in range(segments):
+        angle = (360.0 / segments) * segment_index
+        x_pos = sin(radians(angle)) * COURSE_RADIUS
+        z_pos = cos(radians(angle)) * COURSE_RADIUS
+
+        tiles.append(
+            EntityBlueprint(
+                model="cube",
+                color_name="dark_gray",
+                scale=road_tile_scale,
+                position=Vec3(x_pos, road_tile_scale.y * 0.5, z_pos),
+                is_dynamic=False,
+            ),
+        )
+
+        if segment_index % 2 == 0:
+            curb_color = "red" if (segment_index // 2) % 2 == 0 else "white"
+            for curb_radius in (COURSE_RADIUS - 5.2, COURSE_RADIUS + 5.2):
+                curb_x = sin(radians(angle)) * curb_radius
+                curb_z = cos(radians(angle)) * curb_radius
+                tiles.append(
+                    EntityBlueprint(
+                        model="cube",
+                        color_name=curb_color,
+                        scale=Vec3(1.4, 0.22, 1.4),
+                        position=Vec3(curb_x, 0.11, curb_z),
+                        is_dynamic=False,
+                    ),
+                )
+
+    for stripe_index in range(-3, 4):
+        tiles.append(
+            EntityBlueprint(
+                model="cube",
+                color_name="smoke",
+                scale=Vec3(1.1, 0.18, 3.2),
+                position=Vec3(stripe_index * 1.4, 0.1, COURSE_RADIUS),
+                is_dynamic=False,
+            ),
+        )
+
+    return tiles
+
+
+def _course_obstacles() -> list[EntityBlueprint]:
+    """Place dynamic obstacles around the loop for dodge-heavy gameplay."""
+    obstacles: list[EntityBlueprint] = []
+    lane_offsets = (-2.6, 0.0, 2.6)
+    colors = ("orange", "yellow", "azure", "magenta", "cyan", "violet")
+
+    for obstacle_index, angle in enumerate(range(12, 360, 24)):
+        lane_offset = lane_offsets[obstacle_index % len(lane_offsets)]
+        obstacle_radius = COURSE_RADIUS + lane_offset
+        x_pos = sin(radians(float(angle))) * obstacle_radius
+        z_pos = cos(radians(float(angle))) * obstacle_radius
+        model_name = "sphere" if obstacle_index % 2 else "cube"
+        scale = Vec3(1.5, 1.5, 1.5) if model_name == "sphere" else Vec3(1.8, 1.8, 1.8)
+
+        obstacles.append(
+            EntityBlueprint(
+                model=model_name,
+                color_name=colors[obstacle_index % len(colors)],
+                scale=scale,
+                position=Vec3(x_pos, scale.y * 0.5, z_pos),
+            ),
+        )
+
+    for angle in range(0, 360, 45):
+        x_pos = sin(radians(float(angle))) * 16.0
+        z_pos = cos(radians(float(angle))) * 16.0
+        obstacles.append(
+            EntityBlueprint(
+                model="sphere",
+                color_name="yellow",
+                scale=Vec3(1.35, 1.35, 1.35),
+                position=Vec3(x_pos, 0.675, z_pos),
+            ),
+        )
+
+    return obstacles
 
 
 def _perimeter_columns() -> list[EntityBlueprint]:
@@ -45,9 +159,9 @@ def _perimeter_columns() -> list[EntityBlueprint]:
     columns: list[EntityBlueprint] = []
     colors = ("cyan", "magenta", "yellow", "lime")
     color_index = 0
-    edge = 110.0
+    edge = 122.0
 
-    for step in range(-90, 91, 18):
+    for step in range(-96, 97, 24):
         edge_positions = (
             (float(step), edge),
             (float(step), -edge),
@@ -61,6 +175,7 @@ def _perimeter_columns() -> list[EntityBlueprint]:
                     color_name=colors[color_index % len(colors)],
                     scale=Vec3(2.4, 6.2, 2.4),
                     position=Vec3(x_pos, 3.1, z_pos),
+                    is_dynamic=False,
                 ),
             )
             color_index += 1
@@ -68,47 +183,101 @@ def _perimeter_columns() -> list[EntityBlueprint]:
     return columns
 
 
-def orbital_prop_scale(model_name: str, ring_index: int) -> Vec3:
-    """Return scale for orbital props based on model and ring."""
-    if model_name == "sphere":
-        sphere_scale = 1.1 + (ring_index * 0.18)
-        return Vec3(sphere_scale, sphere_scale, sphere_scale)
-
-    return Vec3(
-        1.2 + (ring_index * 0.16),
-        1.4 + (ring_index * 0.28),
-        1.2 + (ring_index * 0.16),
+def _trackside_houses() -> list[EntityBlueprint]:
+    """Place static house-like structures around the outer course area."""
+    houses: list[EntityBlueprint] = []
+    home_positions = (
+        Vec3(72.0, 0.0, 66.0),
+        Vec3(-76.0, 0.0, 58.0),
+        Vec3(74.0, 0.0, -62.0),
+        Vec3(-71.0, 0.0, -68.0),
+        Vec3(0.0, 0.0, 98.0),
+        Vec3(0.0, 0.0, -98.0),
     )
+    wall_colors = ("peach", "smoke", "light_gray")
+
+    for house_index, base in enumerate(home_positions):
+        wall_color = wall_colors[house_index % len(wall_colors)]
+        houses.append(
+            EntityBlueprint(
+                model="cube",
+                color_name=wall_color,
+                scale=Vec3(9.0, 4.6, 9.0),
+                position=Vec3(base.x, 2.3, base.z),
+                is_dynamic=False,
+            ),
+        )
+        houses.append(
+            EntityBlueprint(
+                model="cube",
+                color_name="brown",
+                scale=Vec3(9.4, 1.1, 9.4),
+                position=Vec3(base.x, 4.95, base.z),
+                is_dynamic=False,
+            ),
+        )
+        houses.append(
+            EntityBlueprint(
+                model="cube",
+                color_name="dark_gray",
+                scale=Vec3(1.4, 2.5, 0.4),
+                position=Vec3(base.x, 1.25, base.z + 4.7),
+                is_dynamic=False,
+            ),
+        )
+
+    return houses
 
 
-def _orbital_props() -> list[EntityBlueprint]:
-    """Create large concentric rings of mixed-shape dynamic props."""
-    props: list[EntityBlueprint] = []
-    models = ("cube", "sphere")
-    colors = ("red", "azure", "orange", "violet", "lime", "yellow", "cyan", "magenta")
-    radii = (18.0, 34.0, 52.0, 72.0, 94.0)
-    points_per_ring = 14
+def _trackside_trees() -> list[EntityBlueprint]:
+    """Place static tree clusters to improve depth and silhouette variety."""
+    trees: list[EntityBlueprint] = []
+    canopy_colors = ("green", "lime")
 
-    for ring_index, radius in enumerate(radii):
-        for point_index in range(points_per_ring):
-            angle = ((360.0 / points_per_ring) * point_index) + (ring_index * 8.0)
-            x_pos = sin(radians(angle)) * radius
-            z_pos = cos(radians(angle)) * radius
+    for tree_index, angle in enumerate(range(0, 360, 30)):
+        radius = 84.0 if tree_index % 2 == 0 else 102.0
+        x_pos = sin(radians(float(angle))) * radius
+        z_pos = cos(radians(float(angle))) * radius
+        canopy_color = canopy_colors[tree_index % len(canopy_colors)]
 
-            model_name = models[(ring_index + point_index) % len(models)]
-            color_name = colors[(ring_index * 3 + point_index) % len(colors)]
-            scale = orbital_prop_scale(model_name, ring_index)
+        trees.append(
+            EntityBlueprint(
+                model="cube",
+                color_name="brown",
+                scale=Vec3(0.8, 3.2, 0.8),
+                position=Vec3(x_pos, 1.6, z_pos),
+                is_dynamic=False,
+            ),
+        )
+        trees.append(
+            EntityBlueprint(
+                model="sphere",
+                color_name=canopy_color,
+                scale=Vec3(3.4, 3.4, 3.4),
+                position=Vec3(x_pos, 4.4, z_pos),
+                is_dynamic=False,
+            ),
+        )
+        trees.append(
+            EntityBlueprint(
+                model="sphere",
+                color_name=canopy_color,
+                scale=Vec3(2.6, 2.6, 2.6),
+                position=Vec3(x_pos + 1.2, 5.6, z_pos),
+                is_dynamic=False,
+            ),
+        )
+        trees.append(
+            EntityBlueprint(
+                model="sphere",
+                color_name=canopy_color,
+                scale=Vec3(2.6, 2.6, 2.6),
+                position=Vec3(x_pos - 1.2, 5.6, z_pos),
+                is_dynamic=False,
+            ),
+        )
 
-            props.append(
-                EntityBlueprint(
-                    model=model_name,
-                    color_name=color_name,
-                    scale=scale,
-                    position=Vec3(x_pos, scale.y * 0.5, z_pos),
-                ),
-            )
-
-    return props
+    return trees
 
 
 def _cardinal_landmarks() -> list[EntityBlueprint]:
@@ -132,6 +301,7 @@ def _cardinal_landmarks() -> list[EntityBlueprint]:
                 color_name=color_name,
                 scale=scale,
                 position=position,
+                is_dynamic=False,
             ),
         )
 
