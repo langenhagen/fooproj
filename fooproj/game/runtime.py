@@ -4,6 +4,7 @@ import importlib
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
+from time import monotonic
 from typing import TYPE_CHECKING, cast
 
 import ursina
@@ -63,6 +64,7 @@ CHASE_CAMERA_LOOK_AHEAD = 3.6
 CHASE_CAMERA_FOLLOW_SPEED = 8.5
 GAMEPAD_DEADZONE = 0.08
 GAMEPAD_LOOK_SENSITIVITY = 0.012
+RUMBLE_COOLDOWN_SECONDS = 0.12
 
 
 @dataclass(slots=True)
@@ -649,6 +651,23 @@ def compute_player_velocity(
     )
 
 
+def trigger_impact_rumble(player_speed: float) -> None:
+    """Trigger brief gamepad rumble on impact, if a controller exists."""
+    if player_speed <= MIN_IMPACT_SPEED:
+        return
+
+    rumble_strength = max(0.2, min(0.9, player_speed / 18.0))
+    with suppress(Exception):
+        gamepad_module = importlib.import_module("ursina.gamepad")
+        vibrate = getattr(gamepad_module, "vibrate", None)
+        if callable(vibrate):
+            vibrate(
+                low_freq_motor=rumble_strength,
+                high_freq_motor=min(1.0, (rumble_strength * 0.8) + 0.1),
+                duration=0.08,
+            )
+
+
 def resolve_ground_contact(
     position_y: float,
     velocity_y: float,
@@ -672,9 +691,10 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
     """Attach simple prop physics and player impact responses."""
     controller = Entity(name="prop_physics_controller")
     previous_player_position = Vec3(player.position)
+    last_rumble_time = 0.0
 
     def controller_update() -> None:
-        nonlocal previous_player_position
+        nonlocal previous_player_position, last_rumble_time
 
         dt = get_frame_dt()
         player_velocity = compute_player_velocity(
@@ -702,6 +722,11 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
                     prop.entity.position += push_dir * (penetration * 0.4)
                 prop.velocity += push_dir * (player_speed * (0.8 / prop.mass))
                 prop.velocity.y = max(prop.velocity.y, 1.6)
+
+                now = monotonic()
+                if now - last_rumble_time >= RUMBLE_COOLDOWN_SECONDS:
+                    trigger_impact_rumble(player_speed)
+                    last_rumble_time = now
 
             prop.entity.position += prop.velocity * dt
 
