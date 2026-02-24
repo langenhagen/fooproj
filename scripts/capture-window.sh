@@ -117,7 +117,7 @@ resolve_window_id() {
         return
     fi
 
-    xdotool search --name "$WINDOW_NAME" 2>/dev/null | head -n 1 || true
+    xdotool search --name "$WINDOW_NAME" 2>/dev/null | tail -n 1 || true
 }
 
 TARGET_WINDOW_ID=""
