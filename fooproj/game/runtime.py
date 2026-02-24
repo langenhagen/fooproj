@@ -807,6 +807,9 @@ def install_movement_controller(
         )
 
     def controller_input(key: str) -> None:
+        if key == "escape":
+            application.quit()
+
         if key == "u":
             controls_hint.enabled = not controls_hint.enabled
 
