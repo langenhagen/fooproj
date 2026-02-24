@@ -43,6 +43,9 @@ Prefer repo-local, reproducible commands:
 - Run type checks: `uv run mypy fooproj`.
 - Install hooks: `uv run pre-commit install`.
 - Run hooks manually: `uv run pre-commit run --all-files`.
+- For shell scripts, run:
+  - `shellcheck -x --exclude SC2059 <path/to/script.sh>`
+  - `shfmt --indent 4 --write <path/to/script.sh>`
 - Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
 - Optional personal lint sweep: `source .venv/bin/activate && l3`.
 - Optional personal autofix pass: `source .venv/bin/activate && rf`.

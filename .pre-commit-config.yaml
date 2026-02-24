@@ -48,3 +48,15 @@ repos:
         args: [--min-confidence, "70"]
         language: system
         pass_filenames: false
+
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck -x --exclude SC2059
+        language: system
+        files: \.sh$
+
+      - id: shfmt
+        name: shfmt
+        entry: shfmt --indent 4 --write
+        language: system
+        files: \.sh$
