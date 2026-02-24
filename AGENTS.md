@@ -37,6 +37,11 @@ Prefer repo-local, reproducible commands:
 - Sync dependencies: `uv sync`.
 - Run app entrypoint (game): `uv run fooproj`.
 - Consider using `scripts/debug-startup.sh` and then inspecting `__debug/out.log` to spot startup issues and logs quickly.
+- For visual debugging and reproducible gameplay checks, use:
+  - `scripts/capture-game.sh` for timestamped run folders under `__debug/`
+    with `screens/`, `capture.log`, and optional `game.log`.
+  - `scripts/capture-window.sh` for generic X11 window capture by name/id.
+  - `xdotool` in conjunction with capture scripts to automate mouse and keyboard input scenarios while collecting screenshots/logs.
 - Run tests: `uv run pytest`.
 - Run linter: `uv run ruff check .`.
 - Format code: `uv run ruff format .`.

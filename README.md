@@ -69,6 +69,34 @@ uv run --group lint pylint fooproj tests
 uv run --group lint vulture fooproj tests
 ```
 
+## Debug capture scripts
+
+- `scripts/capture-window.sh`: generic X11 window screenshot capture tool.
+  - Capture any window by name or id at a fixed interval.
+  - Outputs numbered+timestamped frames to a target directory.
+- `scripts/capture-game.sh`: game-focused wrapper around `capture-window.sh`.
+  - Targets `ursina` window names automatically.
+  - Writes to `__debug/drive_run_YYYY-MM-DD-HH-MM-SS/` with:
+    - `screens/` (captured frames)
+    - `capture.log`
+    - `game.log` (when using `--run-game`)
+
+Examples:
+
+```bash
+# capture an already-running game window
+scripts/capture-game.sh --interval 0.5 --frames 120
+
+# launch game and capture frames + logs in one run folder
+scripts/capture-game.sh --run-game --frames 120 --interval 0.5
+
+# generic capture for any X11 window name
+scripts/capture-window.sh --name "ursina" --out __debug/screens --frames 60
+```
+
+You can combine capture scripts with `xdotool` input automation for repeatable
+drive scenarios and visual debugging.
+
 ## Project layout
 
 - `fooproj/`: application package and CLI entrypoint
