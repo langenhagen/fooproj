@@ -1,4 +1,4 @@
-# fooproj
+# Fooproj
 
 Third-person 3D Ursina driving sandbox in Python.
 
@@ -9,7 +9,7 @@ This project is nearly entirely vibe coded.
 - `pyenv`
 - `uv`
 
-## Quick start
+## Quick Start
 
 ```bash
 pyenv install -s 3.14.3
@@ -26,7 +26,7 @@ uv run fooproj
 - Mouse wheel: zoom in/out (zoom-in is clamped, zoom-out unbounded)
 - `c`: toggle orbit/chase camera
 
-### Optional PS5 controller support
+### Optional PS5 Controller Support
 
 If you have a PS5 controller connected, try these mappings:
 
@@ -38,7 +38,7 @@ If you have a PS5 controller connected, try these mappings:
 - D-pad up/down: zoom in/out
 - Impact rumble on collisions (silently disabled when no controller is available)
 
-## Full setup and checks
+## Full Setup and Checks
 
 ```bash
 # install and activate the pinned Python version
@@ -69,7 +69,7 @@ uv run --group lint pylint fooproj tests
 uv run --group lint vulture fooproj tests
 ```
 
-## Debug capture scripts
+## Debug Capture Scripts
 
 - `scripts/capture-window.sh`: generic X11 window screenshot capture tool.
   - Capture any window by name or id at a fixed interval.
@@ -97,7 +97,7 @@ scripts/capture-window.sh --name "ursina" --out __debug/screens --frames 60
 You can combine capture scripts with `xdotool` input automation for repeatable
 drive scenarios and visual debugging.
 
-## Project layout
+## Project Layout
 
 - `fooproj/`: application package and CLI entrypoint
 - `fooproj/game/`: runtime, input/camera controls, scene setup, lighting
