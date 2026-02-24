@@ -47,6 +47,7 @@ Prefer repo-local, reproducible commands:
 - Run linter: `uv run ruff check .`.
 - Format code: `uv run ruff format .`.
 - Run type checks: `uv run mypy fooproj`.
+- Run TOML checks/formatting: `taplo check .` and `taplo fmt .`.
 - Install hooks: `uv run pre-commit install`.
 - Run hooks manually: `uv run pre-commit run --all-files`.
 - For shell scripts, run:

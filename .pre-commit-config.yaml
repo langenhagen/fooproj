@@ -49,6 +49,18 @@ repos:
         language: system
         pass_filenames: false
 
+      - id: taplo-check
+        name: taplo check
+        entry: taplo check
+        language: system
+        files: \.toml$
+
+      - id: taplo-fmt
+        name: taplo fmt
+        entry: taplo fmt
+        language: system
+        files: \.toml$
+
       - id: shellcheck
         name: shellcheck
         entry: shellcheck -x --exclude SC2059
