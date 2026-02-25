@@ -109,6 +109,26 @@ if ! command -v import >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! [[ "$FRAMES" =~ ^[0-9]+$ ]] || [[ "$FRAMES" -le 0 ]]; then
+    printf 'frames must be a positive integer (got: %s).\n' "$FRAMES" >&2
+    exit 2
+fi
+
+if ! [[ "$STARTUP_WAIT" =~ ^[0-9]+$ ]] || [[ "$STARTUP_WAIT" -lt 0 ]]; then
+    printf 'startup-wait must be a non-negative integer (got: %s).\n' "$STARTUP_WAIT" >&2
+    exit 2
+fi
+
+if ! [[ "$MAX_MISSES" =~ ^[0-9]+$ ]] || [[ "$MAX_MISSES" -le 0 ]]; then
+    printf 'max-misses must be a positive integer (got: %s).\n' "$MAX_MISSES" >&2
+    exit 2
+fi
+
+if ! [[ "$INTERVAL" =~ ^([0-9]+([.][0-9]+)?|[.][0-9]+)$ ]]; then
+    printf 'interval must be numeric (got: %s).\n' "$INTERVAL" >&2
+    exit 2
+fi
+
 mkdir -p "$OUT_DIR"
 
 resolve_window_id() {
@@ -140,6 +160,7 @@ done
 printf 'Capturing window id %s -> %s\n' "$TARGET_WINDOW_ID" "$OUT_DIR"
 
 MISSES="0"
+SAVED_FRAMES="0"
 
 for ((i = 1; i <= FRAMES; i++)); do
     if [[ -z "$WINDOW_ID" ]]; then
@@ -169,8 +190,9 @@ for ((i = 1; i <= FRAMES; i++)); do
         fi
     else
         MISSES="0"
+        SAVED_FRAMES="$((SAVED_FRAMES + 1))"
     fi
     sleep "$INTERVAL"
 done
 
-printf 'Captured %s frames in %s\n' "$FRAMES" "$OUT_DIR"
+printf 'Captured %s/%s frames in %s\n' "$SAVED_FRAMES" "$FRAMES" "$OUT_DIR"
