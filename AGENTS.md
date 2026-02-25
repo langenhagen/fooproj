@@ -22,6 +22,7 @@ Practical guidance for humans and coding agents working in this repository.
 - Game runtime: `ursina`.
 - Test framework: `pytest`.
 - Lint/format: `ruff`.
+- Security/pattern scanning: `semgrep`.
 - Type checking: `mypy`.
 
 ## Repo Layout
@@ -54,6 +55,7 @@ Prefer repo-local, reproducible commands:
   - `shellcheck -x --exclude SC2059 <path/to/script.sh>`
   - `shfmt --indent 4 --write <path/to/script.sh>`
 - Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
+- Optional Semgrep scan: `uv run --group lint semgrep scan --error --config auto fooproj tests`.
 - Optional personal lint sweep: `source .venv/bin/activate && l3`.
 - Optional personal autofix pass: `source .venv/bin/activate && rf`.
 - You can scope those tools to one file when iterating quickly:
