@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#
 # Start the game and write unbuffered output to __debug/out.log.
 
 set -euo pipefail
