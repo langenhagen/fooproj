@@ -1,7 +1,6 @@
 """Entity spawn/despawn orchestration around scene blueprints."""
 
 import importlib
-from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -369,6 +368,40 @@ def normalize_loaded_car_model(model: object) -> None:
     )
 
 
+def load_model_from_loader(loader: object, model_path: Path) -> object | None:
+    """Load a model object from a Panda3D/Ursina loader if possible."""
+    load_model = getattr(loader, "loadModel", None)
+    if not callable(load_model):
+        return None
+
+    try:
+        return cast("object", load_model(str(model_path)))
+    except OSError, RuntimeError, TypeError, ValueError:
+        return None
+
+
+def model_is_empty(model: object) -> bool:
+    """Check whether a loaded model reports itself as empty."""
+    is_empty_callable = getattr(model, "isEmpty", None)
+    if not callable(is_empty_callable):
+        return False
+    return bool(is_empty_callable())
+
+
+def apply_imported_model_cull_reverse(model: object) -> None:
+    """Apply reverse culling when Panda3D CullFaceAttrib is available."""
+    try:
+        panda3d_core = importlib.import_module("panda3d.core")
+    except ModuleNotFoundError, ImportError:
+        return
+
+    cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
+    make_reverse = getattr(cull_face_attrib, "makeReverse", None)
+    set_attrib = getattr(model, "setAttrib", None)
+    if callable(make_reverse) and callable(set_attrib):
+        set_attrib(make_reverse())
+
+
 def spawn_imported_player() -> Entity | None:
     """Try to spawn imported car model and return None on load failure."""
     if not CAR_MODEL_FILE.exists():
@@ -378,31 +411,26 @@ def spawn_imported_player() -> Entity | None:
     if loader is None:
         return None
 
-    with suppress(Exception):
-        model = loader.loadModel(str(CAR_MODEL_FILE))
-        is_empty_callable = getattr(model, "isEmpty", None)
-        is_empty = bool(is_empty_callable()) if callable(is_empty_callable) else False
-        if is_empty:
-            return None
+    model = load_model_from_loader(loader, CAR_MODEL_FILE)
+    if model is None:
+        return None
 
-        # Imported OBJ has inverted winding in this asset pack.
-        panda3d_core = importlib.import_module("panda3d.core")
-        cull_face_attrib = getattr(panda3d_core, "CullFaceAttrib", None)
-        if cull_face_attrib is not None:
-            model.setAttrib(cull_face_attrib.makeReverse())
+    if model_is_empty(model):
+        return None
 
-        normalize_loaded_car_model(model)
+    # Imported OBJ has inverted winding in this asset pack.
+    apply_imported_model_cull_reverse(model)
 
-        car = Entity(
-            name="player_car_imported_root",
-            model=model,
-            position=Vec3(0.0, 0.0, 0.0),
-        )
-        if CAR_BASE_TEXTURE_FILE.exists():
-            car.texture = CAR_BASE_TEXTURE_PATH
-        return mark_lit_shadowed(car)
+    normalize_loaded_car_model(model)
 
-    return None
+    car = Entity(
+        name="player_car_imported_root",
+        model=model,
+        position=Vec3(0.0, 0.0, 0.0),
+    )
+    if CAR_BASE_TEXTURE_FILE.exists():
+        car.texture = CAR_BASE_TEXTURE_PATH
+    return mark_lit_shadowed(car)
 
 
 def spawn_player() -> Entity:
