@@ -2,6 +2,7 @@
 
 import importlib
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -39,6 +40,7 @@ class DynamicProp:
     mass: float
 
 
+@cache
 def resolve_color(color_name: str) -> Color:
     """Resolve a color name from Ursina's built-in color palette."""
     return cast("Color", getattr(color_module, color_name, color_module.white))
