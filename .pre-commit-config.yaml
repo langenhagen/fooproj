@@ -49,6 +49,12 @@ repos:
         language: system
         pass_filenames: false
 
+      - id: semgrep
+        name: semgrep
+        entry: uv run --group lint semgrep scan --error --config auto fooproj tests
+        language: system
+        pass_filenames: false
+
       - id: taplo-check
         name: taplo check
         entry: taplo check
