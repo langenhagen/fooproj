@@ -102,16 +102,16 @@ def _round_course_tiles() -> list[EntityBlueprint]:
                     ),
                 )
 
-    for stripe_index in range(-3, 4):
-        tiles.append(
-            EntityBlueprint(
-                model="cube",
-                color_name="smoke",
-                scale=Vec3(1.1, 0.18, 3.2),
-                position=Vec3(stripe_index * 1.4, 0.1, COURSE_RADIUS),
-                is_dynamic=False,
-            ),
+    tiles.extend(
+        EntityBlueprint(
+            model="cube",
+            color_name="smoke",
+            scale=Vec3(1.1, 0.18, 3.2),
+            position=Vec3(stripe_index * 1.4, 0.1, COURSE_RADIUS),
+            is_dynamic=False,
         )
+        for stripe_index in range(-3, 4)
+    )
 
     return tiles
 
@@ -198,23 +198,23 @@ def _trackside_houses() -> list[EntityBlueprint]:
 
     for house_index, base in enumerate(home_positions):
         wall_color = wall_colors[house_index % len(wall_colors)]
-        houses.append(
-            EntityBlueprint(
-                model="cube",
-                color_name=wall_color,
-                scale=Vec3(9.0, 4.6, 9.0),
-                position=Vec3(base.x, 2.3, base.z),
-                is_dynamic=False,
-            ),
-        )
-        houses.append(
-            EntityBlueprint(
-                model="cube",
-                color_name="brown",
-                scale=Vec3(9.4, 1.1, 9.4),
-                position=Vec3(base.x, 4.95, base.z),
-                is_dynamic=False,
-            ),
+        houses.extend(
+            [
+                EntityBlueprint(
+                    model="cube",
+                    color_name=wall_color,
+                    scale=Vec3(9.0, 4.6, 9.0),
+                    position=Vec3(base.x, 2.3, base.z),
+                    is_dynamic=False,
+                ),
+                EntityBlueprint(
+                    model="cube",
+                    color_name="brown",
+                    scale=Vec3(9.4, 1.1, 9.4),
+                    position=Vec3(base.x, 4.95, base.z),
+                    is_dynamic=False,
+                ),
+            ],
         )
         houses.append(
             EntityBlueprint(
@@ -240,41 +240,37 @@ def _trackside_trees() -> list[EntityBlueprint]:
         z_pos = cos(radians(float(angle))) * radius
         canopy_color = canopy_colors[tree_index % len(canopy_colors)]
 
-        trees.append(
-            EntityBlueprint(
-                model="cube",
-                color_name="brown",
-                scale=Vec3(0.8, 3.2, 0.8),
-                position=Vec3(x_pos, 1.6, z_pos),
-                is_dynamic=False,
-            ),
-        )
-        trees.append(
-            EntityBlueprint(
-                model="sphere",
-                color_name=canopy_color,
-                scale=Vec3(3.4, 3.4, 3.4),
-                position=Vec3(x_pos, 4.4, z_pos),
-                is_dynamic=False,
-            ),
-        )
-        trees.append(
-            EntityBlueprint(
-                model="sphere",
-                color_name=canopy_color,
-                scale=Vec3(2.6, 2.6, 2.6),
-                position=Vec3(x_pos + 1.2, 5.6, z_pos),
-                is_dynamic=False,
-            ),
-        )
-        trees.append(
-            EntityBlueprint(
-                model="sphere",
-                color_name=canopy_color,
-                scale=Vec3(2.6, 2.6, 2.6),
-                position=Vec3(x_pos - 1.2, 5.6, z_pos),
-                is_dynamic=False,
-            ),
+        trees.extend(
+            [
+                EntityBlueprint(
+                    model="cube",
+                    color_name="brown",
+                    scale=Vec3(0.8, 3.2, 0.8),
+                    position=Vec3(x_pos, 1.6, z_pos),
+                    is_dynamic=False,
+                ),
+                EntityBlueprint(
+                    model="sphere",
+                    color_name=canopy_color,
+                    scale=Vec3(3.4, 3.4, 3.4),
+                    position=Vec3(x_pos, 4.4, z_pos),
+                    is_dynamic=False,
+                ),
+                EntityBlueprint(
+                    model="sphere",
+                    color_name=canopy_color,
+                    scale=Vec3(2.6, 2.6, 2.6),
+                    position=Vec3(x_pos + 1.2, 5.6, z_pos),
+                    is_dynamic=False,
+                ),
+                EntityBlueprint(
+                    model="sphere",
+                    color_name=canopy_color,
+                    scale=Vec3(2.6, 2.6, 2.6),
+                    position=Vec3(x_pos - 1.2, 5.6, z_pos),
+                    is_dynamic=False,
+                ),
+            ],
         )
 
     return trees
