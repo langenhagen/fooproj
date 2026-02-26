@@ -42,10 +42,8 @@ CAMERA_TOGGLE_KEYS = {"c", "gamepad dpad left"}
 
 
 def configure_window(settings: GameSettings) -> None:
-    """Apply top-level window settings."""
+    """Apply post-init window title fallback for some window managers."""
     window.title = settings.window_title
-    window.borderless = settings.borderless
-    window.fullscreen = settings.fullscreen
 
     base = getattr(application, "base", None)
     panda_window = getattr(base, "win", None)
@@ -180,7 +178,16 @@ def install_movement_controller(
 def run_game(settings: GameSettings | None = None) -> None:
     """Run the Ursina starter sandbox."""
     active_settings = GameSettings() if settings is None else settings
-    app = cast("object", Ursina(development_mode=active_settings.development_mode))
+
+    app = cast(
+        "object",
+        Ursina(
+            title=active_settings.window_title,
+            borderless=active_settings.borderless,
+            fullscreen=active_settings.fullscreen,
+            development_mode=active_settings.development_mode,
+        ),
+    )
     application.asset_folder = Path(__file__).resolve().parents[2]
 
     configure_window(active_settings)
