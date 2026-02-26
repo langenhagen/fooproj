@@ -10,10 +10,6 @@ from ursina import Entity, Vec3, camera, lerp_exponential_decay, scene
 if TYPE_CHECKING:
     from fooproj.game.config import CameraSettings, GameSettings
 
-CHASE_CAMERA_HEIGHT_OFFSET = 0.75
-CHASE_CAMERA_LOOK_AHEAD = 3.6
-CHASE_CAMERA_FOLLOW_SPEED = 8.5
-
 
 @dataclass(slots=True)
 class OrbitControlState:
@@ -105,19 +101,19 @@ def update_chase_camera(
     target_position = (
         player.world_position
         - (player.forward * control_state.camera_distance)
-        + Vec3(0.0, camera_settings.height + CHASE_CAMERA_HEIGHT_OFFSET, 0.0)
+        + Vec3(0.0, camera_settings.height + camera_settings.chase_height_offset, 0.0)
     )
     camera.world_position = cast(
         "Vec3",
         lerp_exponential_decay(
             camera.world_position,
             target_position,
-            dt * CHASE_CAMERA_FOLLOW_SPEED,
+            dt * camera_settings.chase_follow_speed,
         ),
     )
     camera.look_at(
         player.world_position
-        + (player.forward * CHASE_CAMERA_LOOK_AHEAD)
+        + (player.forward * camera_settings.chase_look_ahead)
         + Vec3(0.0, camera_settings.height * 0.5, 0.0),
     )
     camera.rotation_z = 0.0

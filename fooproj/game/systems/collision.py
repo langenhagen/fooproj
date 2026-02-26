@@ -15,13 +15,12 @@ from .timing import get_frame_dt
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from fooproj.game.config import CollisionSettings
     from fooproj.game.systems.spawn import DynamicProp
 
-CAR_IMPACT_RADIUS = 1.75
 MIN_IMPACT_SPEED = 0.1
 NORMALIZE_EPSILON = 0.0001
 GROUND_FRICTION = 0.97
-RUMBLE_COOLDOWN_SECONDS = 0.12
 MIN_PROP_MASS = 0.1
 
 
@@ -60,7 +59,11 @@ def trigger_impact_rumble(player_speed: float) -> None:
         return
 
 
-def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) -> Entity:
+def install_prop_physics_controller(
+    player: Entity,
+    props: list[DynamicProp],
+    settings: CollisionSettings,
+) -> Entity:
     """Attach simple prop physics and player impact responses."""
     controller = Entity(name="prop_physics_controller")
     previous_player_position = Vec3(player.position)
@@ -86,7 +89,7 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
 
             to_prop = prop.entity.position - player.position
             distance = to_prop.length()
-            impact_radius = CAR_IMPACT_RADIUS + prop.radius
+            impact_radius = settings.impact_radius + prop.radius
             if distance < impact_radius and player_speed > MIN_IMPACT_SPEED:
                 push_dir = (
                     to_prop.normalized()
@@ -101,7 +104,7 @@ def install_prop_physics_controller(player: Entity, props: list[DynamicProp]) ->
                 prop.velocity.y = max(prop.velocity.y, 1.6)
 
                 now = monotonic()
-                if now - last_rumble_time >= RUMBLE_COOLDOWN_SECONDS:
+                if now - last_rumble_time >= settings.rumble_cooldown_seconds:
                     trigger_impact_rumble(player_speed)
                     last_rumble_time = now
 

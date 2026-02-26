@@ -166,9 +166,9 @@ def run_game(settings: GameSettings | None = None) -> None:
     orbit_rig = create_camera_orbit_rig(active_settings)
     configure_mouse_capture()
     controls_hint = create_controls_hint()
-    configure_lighting(player)
+    configure_lighting(player, active_settings.shadow)
     install_movement_controller(player, orbit_rig, active_settings, controls_hint)
-    install_prop_physics_controller(player, dynamic_props)
+    install_prop_physics_controller(player, dynamic_props, active_settings.collision)
 
     Sky()
     # Ursina's app proxy is typed as object here, so dynamic access is needed.
