@@ -57,6 +57,7 @@ Prefer repo-local, reproducible commands:
   - `shfmt --indent 4 --write <path/to/script.sh>`
 - Optional extended lint checks: `uv run --group lint pylint fooproj tests`.
 - Optional Semgrep scan: `uv run --group lint semgrep scan --error --config auto fooproj tests`.
+- Run `uv run vulture planetfall/` liberally and act on results.
 - Optional personal lint sweep: `source .venv/bin/activate && l3`.
 - Optional personal autofix pass: `source .venv/bin/activate && rf`.
 - You can scope those tools to one file when iterating quickly:
