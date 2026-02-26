@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 import ursina.color as color_module
 from ursina import Entity, Vec3, application
 
-from .spawn_world import mark_lit_shadowed
+from fooproj.game.systems.spawn_world import mark_lit_shadowed
 
 if TYPE_CHECKING:
     from ursina.color import Color
