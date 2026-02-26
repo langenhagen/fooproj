@@ -24,7 +24,8 @@ from .systems.movement import (
     FORWARD_MAX_SPEED_MULTIPLIER,
     compute_smoothed_forward_speed,
 )
-from .systems.spawn import spawn_player, spawn_world_entities
+from .systems.spawn_player import spawn_player
+from .systems.spawn_world import spawn_world_entities
 from .systems.timing import get_frame_dt
 from .systems.visuals import configure_lighting
 from .ui import create_controls_hint

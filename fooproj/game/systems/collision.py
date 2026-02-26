@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from fooproj.game.config import CollisionSettings
-    from fooproj.game.systems.spawn import DynamicProp
+    from fooproj.game.systems.spawn_world import DynamicProp
 
 MIN_IMPACT_SPEED = 0.1
 NORMALIZE_EPSILON = 0.0001

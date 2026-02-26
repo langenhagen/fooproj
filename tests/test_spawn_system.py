@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from ursina import Vec3
 
-from fooproj.game.systems.spawn import compute_prop_mass
+from fooproj.game.systems.spawn_world import compute_prop_mass
 
 CHECKER = TestCase()
 
