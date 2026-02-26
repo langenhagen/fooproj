@@ -1,5 +1,6 @@
 """Ursina runtime bootstrap and gameplay system wiring."""
 
+import importlib
 from pathlib import Path
 from typing import cast
 
@@ -7,8 +8,8 @@ import ursina
 from ursina import Entity, Sky, Text, Vec3, application, mouse, window
 from ursina.main import Ursina
 
-from .config import CameraSettings, GameSettings, MovementSettings
-from .systems.camera import (
+from fooproj.game.config import CameraSettings, GameSettings, MovementSettings
+from fooproj.game.systems.camera import (
     OrbitControlState,
     OrbitRig,
     compute_zoom_distance,
@@ -18,17 +19,18 @@ from .systems.camera import (
     update_chase_camera,
     update_orbit_camera,
 )
-from .systems.collision import install_prop_physics_controller
-from .systems.input import compute_control_axes
-from .systems.movement import (
+from fooproj.game.systems.collision import install_prop_physics_controller
+from fooproj.game.systems.input import compute_control_axes
+from fooproj.game.systems.movement import (
     FORWARD_MAX_SPEED_MULTIPLIER,
     compute_smoothed_forward_speed,
 )
-from .systems.spawn_player import spawn_player
-from .systems.spawn_world import spawn_world_entities
-from .systems.timing import get_frame_dt
-from .systems.visuals import configure_lighting
-from .ui import create_controls_hint
+from fooproj.game.systems.rivals import install_rival_controller
+from fooproj.game.systems.spawn_player import spawn_player
+from fooproj.game.systems.spawn_world import spawn_world_entities
+from fooproj.game.systems.timing import get_frame_dt
+from fooproj.game.systems.visuals import configure_lighting
+from fooproj.game.ui import create_controls_hint
 
 SCROLL_DIRECTION_BY_KEY = {
     "scroll up": 1,
@@ -44,6 +46,29 @@ def configure_window(settings: GameSettings) -> None:
     window.title = settings.window_title
     window.borderless = settings.borderless
     window.fullscreen = settings.fullscreen
+
+    base = getattr(application, "base", None)
+    panda_window = getattr(base, "win", None)
+    if panda_window is None:
+        return
+
+    try:
+        panda3d_core = importlib.import_module("panda3d.core")
+    except ModuleNotFoundError, ImportError:
+        return
+
+    window_properties_cls = getattr(panda3d_core, "WindowProperties", None)
+    if window_properties_cls is None:
+        return
+
+    properties = window_properties_cls()
+    set_title = getattr(properties, "setTitle", None)
+    if callable(set_title):
+        set_title(settings.window_title)
+
+    request_properties = getattr(panda_window, "requestProperties", None)
+    if callable(request_properties):
+        request_properties(properties)
 
 
 def configure_mouse_capture() -> None:
@@ -169,7 +194,13 @@ def run_game(settings: GameSettings | None = None) -> None:
     controls_hint = create_controls_hint()
     configure_lighting(player, active_settings.shadow)
     install_movement_controller(player, orbit_rig, active_settings, controls_hint)
-    install_prop_physics_controller(player, dynamic_props, active_settings.collision)
+    rival_agents = install_rival_controller(active_settings.rivals)
+    install_prop_physics_controller(
+        player,
+        dynamic_props,
+        active_settings.collision,
+        rivals=rival_agents,
+    )
 
     Sky()
     # Ursina's app proxy is typed as object here, so dynamic access is needed.

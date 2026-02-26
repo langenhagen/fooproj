@@ -48,10 +48,24 @@ class ShadowSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class RivalSettings:
+    """AI traffic/rival settings for looped track opponents."""
+
+    enabled: bool = True
+    count: int = 5
+    min_speed: float = 11.0
+    max_speed: float = 17.0
+    lane_offsets: tuple[float, ...] = (-2.6, 0.0, 2.6)
+    bob_amplitude: float = 0.06
+    bob_speed: float = 2.4
+    lane_rejoin_rate: float = 7.0
+
+
+@dataclass(frozen=True, slots=True)
 class GameSettings:
     """Settings used to bootstrap the Ursina app."""
 
-    window_title: str = "fooproj Ursina sandbox"
+    window_title: str = "fooproj"
     borderless: bool = False
     fullscreen: bool = False
     development_mode: bool = True
@@ -59,3 +73,4 @@ class GameSettings:
     camera: CameraSettings = field(default_factory=CameraSettings)
     collision: CollisionSettings = field(default_factory=CollisionSettings)
     shadow: ShadowSettings = field(default_factory=ShadowSettings)
+    rivals: RivalSettings = field(default_factory=RivalSettings)
