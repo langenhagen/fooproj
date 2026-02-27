@@ -1,7 +1,5 @@
 """Lighting and visual world setup helpers."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import ursina.color as color_module

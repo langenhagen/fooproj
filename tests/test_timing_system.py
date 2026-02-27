@@ -1,7 +1,5 @@
 """Tests for runtime frame timing helpers."""
 
-from __future__ import annotations
-
 from math import inf, nan
 from types import SimpleNamespace
 from typing import TYPE_CHECKING

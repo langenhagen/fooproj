@@ -1,7 +1,5 @@
 """Tests for collision-side safety and rumble helpers."""
 
-from __future__ import annotations
-
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest import TestCase

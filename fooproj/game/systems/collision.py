@@ -1,7 +1,5 @@
 """Collision and impact response systems for dynamic props."""
 
-from __future__ import annotations
-
 import importlib
 from functools import cache
 from time import monotonic

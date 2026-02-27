@@ -1,7 +1,5 @@
 """AI rival traffic spawning and circular track update helpers."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from math import atan2, copysign, cos, degrees, hypot, pi, radians, sin
 from typing import TYPE_CHECKING, cast
