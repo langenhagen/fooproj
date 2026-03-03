@@ -65,8 +65,9 @@ Prefer repo-local, reproducible commands:
   - `source .venv/bin/activate && l3 path/to/file.py`
   - `source .venv/bin/activate && rf path/to/file.py`
 
-Note: `l3` runs many tools and is slow. Use it sparingly, typically near
-milestones or before committing broader changes.
+Note: `l3` runs many tools and is slow. Prefer running it on a single file
+while iterating (or as part of a per-file bigcheck sweep) instead of running
+it across the whole project.
 
 Do not run full test suites automatically unless requested; use focused checks for touched files/areas first.
 
@@ -102,9 +103,14 @@ Interpret these tokens as explicit workflow commands:
   - Include both the commit message and a prose walkthrough of what changed and why.
 
 - `bigcheck` or `big check`
-  - Run and act on this full local sweep:
-    - `source .venv/bin/activate; rf; l3; pre-commit run --all; pytest`
-  - Treat failures as actionable, fix them, and re-run until green when feasible.
+  - Run and act (fix) on a per-file sweep using the full toolchain, one file at a
+    time. For each file: run `rf` and `l3` scoped to that file, fix where feasible
+    then run vulture (and pytest as appropriate), fix issues,
+    and repeat until green before moving to the next file.
+  - Apply the sweep to all Python files in the repo, one after another.
+  - Run pre-commit and pytest against all files at the end.
+  - Avoid running `l3` across the entire project unless explicitly requested.
+  - Do not run `l3` in a for/while loop.
 
 ## Commit Workflow Expectations
 
