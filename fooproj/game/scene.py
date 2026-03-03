@@ -26,19 +26,6 @@ class EntityBlueprint:
     is_dynamic: bool = True
 
 
-def starter_scene_blueprints() -> tuple[EntityBlueprint, ...]:
-    """Return entities for an obstacle-focused sandbox race arena."""
-    blueprints: list[EntityBlueprint] = []
-    blueprints.extend(_ground_layers())
-    blueprints.extend(_round_course_tiles())
-    blueprints.extend(_course_obstacles())
-    blueprints.extend(_trackside_houses())
-    blueprints.extend(_trackside_trees())
-    blueprints.extend(_perimeter_columns())
-    blueprints.extend(_cardinal_landmarks())
-    return tuple(blueprints)
-
-
 def _ground_layers() -> list[EntityBlueprint]:
     """Create layered ground colors so the world reads like a track area."""
     return [
@@ -302,3 +289,16 @@ def _cardinal_landmarks() -> list[EntityBlueprint]:
         )
 
     return landmarks
+
+
+def starter_scene_blueprints() -> tuple[EntityBlueprint, ...]:
+    """Return entities for an obstacle-focused sandbox race arena."""
+    blueprints: list[EntityBlueprint] = []
+    blueprints.extend(_ground_layers())
+    blueprints.extend(_round_course_tiles())
+    blueprints.extend(_course_obstacles())
+    blueprints.extend(_trackside_houses())
+    blueprints.extend(_trackside_trees())
+    blueprints.extend(_perimeter_columns())
+    blueprints.extend(_cardinal_landmarks())
+    return tuple(blueprints)
